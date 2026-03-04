@@ -76,10 +76,14 @@ export class Player {
   }
 
   update() {
-    const up = this.cursors.up.isDown || this.wasd.up.isDown;
-    const down = this.cursors.down.isDown || this.wasd.down.isDown;
-    const left = this.cursors.left.isDown || this.wasd.left.isDown;
-    const right = this.cursors.right.isDown || this.wasd.right.isDown;
+    // Don't process keyboard input if a text input element is focused
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
+
+    const up = this.cursors.up.isDown || (!isInputFocused && this.wasd.up.isDown);
+    const down = this.cursors.down.isDown || (!isInputFocused && this.wasd.down.isDown);
+    const left = this.cursors.left.isDown || (!isInputFocused && this.wasd.left.isDown);
+    const right = this.cursors.right.isDown || (!isInputFocused && this.wasd.right.isDown);
 
     let vx = 0;
     let vy = 0;
