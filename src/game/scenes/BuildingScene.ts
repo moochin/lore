@@ -161,43 +161,46 @@ export class BuildingScene extends Phaser.Scene {
   }
 
   private renderBuildingContent() {
+    const centerX = (ROOM_WIDTH * TILE_SIZE) / 2;
+
     if (!this.componentEntity) {
       this.add
-        .text(TILE_SIZE * 2, TILE_SIZE * 1.5, 'An empty room.', {
+        .text(centerX, -3 * TILE_SIZE, 'An empty room.', {
           fontSize: '10px',
           color: '#ffe0a0',
           backgroundColor: '#5a4a3a',
           padding: { x: 4, y: 4 },
         })
+        .setOrigin(0.5, 0)
         .setDepth(10);
       return;
     }
 
     const info = generateBuildingInfo(this.componentEntity);
 
-    // Title plaque — position on right side to leave room for NPC on left
-    const textStartX = this.ownerEntity ? TILE_SIZE * 7 : TILE_SIZE * 2;
-
+    // Title — centered above room
     const name = info[0] ?? this.componentEntity.metadata.name;
     this.add
-      .text(textStartX, TILE_SIZE * 1.2, name, {
-        fontSize: '12px',
+      .text(centerX, -7 * TILE_SIZE, name, {
+        fontSize: '14px',
         fontStyle: 'bold',
         color: '#ffe0a0',
         backgroundColor: '#5a4a3a',
-        padding: { x: 6, y: 3 },
+        padding: { x: 8, y: 4 },
       })
+      .setOrigin(0.5, 0)
       .setDepth(10);
 
     // Type + lifecycle line
     if (info[1]) {
       this.add
-        .text(textStartX, TILE_SIZE * 2.4, info[1], {
+        .text(centerX, -5.5 * TILE_SIZE, info[1], {
           fontSize: '10px',
           color: '#aaccff',
           backgroundColor: '#3a3a5a',
           padding: { x: 4, y: 2 },
         })
+        .setOrigin(0.5, 0)
         .setDepth(10);
     }
 
@@ -205,13 +208,14 @@ export class BuildingScene extends Phaser.Scene {
     const descLines = info.slice(3).filter((l) => l.length > 0);
     if (descLines.length > 0) {
       this.add
-        .text(textStartX, TILE_SIZE * 3.6, descLines.join('\n'), {
+        .text(centerX, -4 * TILE_SIZE, descLines.join('\n'), {
           fontSize: '10px',
           color: '#d4c4a0',
           backgroundColor: '#4a3a2a',
-          padding: { x: 4, y: 4 },
-          wordWrap: { width: (ROOM_WIDTH - 5) * TILE_SIZE },
+          padding: { x: 6, y: 4 },
+          wordWrap: { width: ROOM_WIDTH * TILE_SIZE },
         })
+        .setOrigin(0.5, 0)
         .setDepth(10);
     }
 
@@ -220,15 +224,16 @@ export class BuildingScene extends Phaser.Scene {
     if (tags.length > 0) {
       this.add
         .text(
-          textStartX,
-          TILE_SIZE * (ROOM_HEIGHT - 4),
+          centerX,
+          -1.5 * TILE_SIZE,
           tags.map((t) => `[${t}]`).join(' '),
           { fontSize: '9px', color: '#88cc88' },
         )
+        .setOrigin(0.5, 0)
         .setDepth(10);
     }
 
-    // View Details hint
+    // View Details hint — inside room near bottom
     this.add
       .text(
         TILE_SIZE * 2,
