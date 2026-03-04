@@ -272,7 +272,9 @@ export function ConnectionScreen() {
     if (isReEntry) setTokenFocused(true);
   }, [isReEntry]);
 
-  const canSubmit = url.trim().length > 0 && token.trim().length > 0 && phase !== 'testing';
+  // For localhost, token is optional (guest auth); for remote, token is required
+  const isLocalhost = url.trim().includes('localhost') || url.trim().includes('127.0.0.1');
+  const canSubmit = url.trim().length > 0 && (isLocalhost || token.trim().length > 0) && phase !== 'testing';
 
   async function handleConnect(e: React.FormEvent) {
     e.preventDefault();
@@ -281,7 +283,9 @@ export function ConnectionScreen() {
     setPhase('testing');
     setErrorMsg('');
 
-    const client = new CatalogClient({ baseUrl: url.trim(), token: token.trim() });
+    const trimmedUrl = url.trim();
+    const trimmedToken = token.trim();
+    const client = new CatalogClient({ baseUrl: trimmedUrl, token: trimmedToken });
     const result = await client.testConnection();
 
     if (!result.ok) {
@@ -290,7 +294,8 @@ export function ConnectionScreen() {
       return;
     }
 
-    await saveCredentials(url.trim(), token.trim());
+    // Save credentials; for localhost, even empty token is OK (guest auth will handle it)
+    await saveCredentials(trimmedUrl, trimmedToken);
     setPhase('success');
 
     // Brief pause so the user sees success, then hand off to the game
@@ -352,6 +357,11 @@ export function ConnectionScreen() {
           <div style={S.inputWrap}>
             <label style={S.label} htmlFor="lore-token">
               API Token
+              {isLocalhost && (
+                <span style={{ color: '#3fb950', marginLeft: 8 }}>
+                  (optional — guest auth)
+                </span>
+              )}
               {isReEntry && (
                 <span style={{ color: '#58a6ff', marginLeft: 8 }}>
                   (for <strong>{url}</strong>)
