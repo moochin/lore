@@ -83,6 +83,11 @@ interface GameState {
   backstageBaseUrl: string | null;
   setBackstageConnected: (baseUrl: string) => void;
   disconnectBackstage: () => void;
+
+  // Config panel overlay (B key)
+  configPanelOpen: boolean;
+  openConfigPanel: () => void;
+  closeConfigPanel: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -178,9 +183,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Backstage connection — URL is plaintext in localStorage; token is encrypted separately
   backstageConfigured: hasLiveToken(),
   backstageBaseUrl: loadBaseUrl(),
-  setBackstageConnected: (baseUrl) => set({ backstageConfigured: true, backstageBaseUrl: baseUrl }),
+  setBackstageConnected: (baseUrl) =>
+    set({ backstageConfigured: true, backstageBaseUrl: baseUrl, configPanelOpen: false }),
   disconnectBackstage: () => {
     clearCredentials();
     set({ backstageConfigured: false, backstageBaseUrl: null });
   },
+
+  // Config panel overlay — auto-open on first visit when no live connection
+  configPanelOpen: !hasLiveToken(),
+  openConfigPanel: () => set({ configPanelOpen: true }),
+  closeConfigPanel: () => set({ configPanelOpen: false }),
 }));
