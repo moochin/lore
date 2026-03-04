@@ -76,9 +76,12 @@ export class Player {
   }
 
   update() {
-    // Don't process keyboard input if a text input element is focused
-    const activeElement = document.activeElement;
-    const isInputFocused = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
+    // Check if an input/textarea has focus AND is visible in the DOM
+    // (prevents checking unmounted elements from a closed modal)
+    const activeElement = document.activeElement as HTMLElement | null;
+    const isInputFocused =
+      (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') &&
+      document.body.contains(activeElement);
 
     const up = this.cursors.up.isDown || (!isInputFocused && this.wasd.up.isDown);
     const down = this.cursors.down.isDown || (!isInputFocused && this.wasd.down.isDown);
