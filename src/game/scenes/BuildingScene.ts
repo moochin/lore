@@ -17,12 +17,12 @@ function generateBuildingMap(): number[][] {
     for (let x = 0; x < ROOM_WIDTH; x++) {
       if (x === 0 || x === ROOM_WIDTH - 1 || y === 0 || y === ROOM_HEIGHT - 1) {
         if (y === ROOM_HEIGHT - 1 && x >= 5 && x <= 6) {
-          row.push(6); // door
+          row.push(2); // door
         } else {
-          row.push(3); // wall
+          row.push(0); // wall
         }
       } else {
-        row.push(5); // floor
+        row.push(1); // floor
       }
     }
     map.push(row);
@@ -66,11 +66,11 @@ export class BuildingScene extends Phaser.Scene {
       tileHeight: TILE_SIZE,
     });
 
-    tilemap.addTilesetImage('3', 'tile_wall', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('5', 'tile_floor', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('6', 'tile_door', TILE_SIZE, TILE_SIZE);
+    tilemap.addTilesetImage('0', 'tile_wall', TILE_SIZE, TILE_SIZE);
+    tilemap.addTilesetImage('1', 'tile_floor', TILE_SIZE, TILE_SIZE);
+    tilemap.addTilesetImage('2', 'tile_door', TILE_SIZE, TILE_SIZE);
 
-    tilemap.setCollision([3]);
+    tilemap.setCollision([0]);
     const collisionLayer = tilemap.layers[0].tilemapLayer;
 
     // Player near the door
