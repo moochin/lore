@@ -70,6 +70,7 @@ Somewhere in these villages is the knowledge you're looking for. You just have t
 | **E** | Talk to an NPC / Enter a building |
 | **Q** | View full entity details (inside buildings) |
 | **M** | Toggle mini-map |
+| **B** | Open Backstage connection panel |
 | **ESC** | Close any open panel |
 
 ---
@@ -83,19 +84,33 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) and step through the gate.
 
+By default LORE runs on built-in mock data — no setup required. To connect your real Backstage instance, press **B** at any time to open the connection panel, paste your catalog URL and a service token, and watch your organisation materialise.
+
+---
+
+## 🔌 Backstage Connection
+
+LORE can connect to a live Backstage instance and generate the world from your real catalog data. Press **B** in-game (or use the connection screen on first launch) and provide:
+
+| Field | What to enter |
+|---|---|
+| **Catalog URL** | Your Backstage base URL, e.g. `https://backstage.example.com` |
+| **Service Token** | A Backstage service-to-service token for the Catalog API |
+
+Once connected, LORE fetches groups, components, APIs, and users from the `/api/catalog/entities` endpoint and rebuilds the world around your real organisation. Your token is encrypted in `localStorage` using a session-derived key — it never leaves the browser.
+
+You can disconnect or reconfigure at any time by pressing **B** again.
+
 ---
 
 ## 🔮 The Vision
 
-Right now, LORE runs on a mock catalog — six guilds, eighteen components, seven APIs, twenty-one adventurers.
+LORE already connects to live Backstage instances, transforming your real teams into villages, your services into buildings, and your colleagues into NPCs with genuine things to say.
 
 **But this is just the beginning.**
 
-The endgame is to point LORE at your *real* Backstage instance and watch your actual organisation appear: your teams in their villages, your services in their buildings, your colleagues ready to tell you what they know. Every onboarding call replaced by a walk through the realm. Every architecture diagram replaced by a building you can enter.
-
 Future expeditions will chart:
 
-- 🔌 **Live Backstage connection** — real catalog data, real world
 - 🗂️ **Azure DevOps, JIRA, C4** — more data sources, richer lore
 - 🧩 **Backstage plugin** — LORE running natively inside your catalog
 - 🌐 **Multiplayer** — see your colleagues exploring the same world in real time
@@ -122,6 +137,7 @@ The React shell and Phaser game engine stay in sync through a shared Zustand sto
 | ⚡ Build Tool | Vite 7 |
 | 🗃️ State | Zustand |
 | 🎨 Art | 100% procedurally generated via Canvas 2D |
+| 🔐 Token Storage | AES-GCM encrypted localStorage |
 | 💾 Persistence | localStorage |
 
 ---
