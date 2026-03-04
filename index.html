@@ -3,6 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      Content-Security-Policy (fallback meta tag)
+      ─────────────────────────────────────────────
+      The dev/preview servers inject a tighter CSP via HTTP headers
+      (see vite.config.ts). This meta tag provides a baseline when
+      no server header is present.
+
+      ⚠️  For production deployments, serve an equivalent HTTP header
+      and replace the connect-src value with your specific Backstage URL:
+
+        Content-Security-Policy:
+          default-src 'self';
+          script-src  'self' 'unsafe-inline';
+          style-src   'self' 'unsafe-inline';
+          img-src     'self' data: blob:;
+          connect-src 'self' https://backstage.your-company.com;
+          frame-src   'none';
+          object-src  'none';
+          base-uri    'self';
+
+      HTTP headers take precedence over this meta tag. The meta tag
+      cannot restrict frame-ancestors; use the HTTP header for that.
+    -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https:; frame-src 'none'; object-src 'none'; base-uri 'self';" />
+
     <title>LORE — Logically Orchestrated RPG Environment</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
