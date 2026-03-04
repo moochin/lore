@@ -2,20 +2,17 @@ import Phaser from 'phaser';
 import { TILE_SIZE } from '../config';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
-import { generateVillage, generateOverworldMapData } from '../systems/MapGenerator';
+import { generateWorld, generateWorldMapData } from '../systems/MapGenerator';
 import { generateNPCDialogue } from '../systems/DialogueSystem';
 import {
-  platformTeam,
-  getTeamMembers,
-  getTeamComponents,
-  getTeamApis,
+  getAllTeams,
   getEntityByRef,
 } from '../../data/mock-catalog';
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
-import type { VillageState, BuildingState } from '../../data/types';
+import type { WorldState, BuildingState } from '../../data/types';
 
-const MAP_WIDTH = 120;
-const MAP_HEIGHT = 90;
+const MAP_WIDTH = 200;
+const MAP_HEIGHT = 160;
 
 export class OverworldScene extends Phaser.Scene {
   private player!: Player;
@@ -23,22 +20,26 @@ export class OverworldScene extends Phaser.Scene {
   private buildingZones: { zone: Phaser.GameObjects.Zone; entityRef: string }[] = [];
   private interactHint!: Phaser.GameObjects.Text;
   private nearTarget: { type: 'building' | 'npc'; ref: string } | null = null;
-  private villageState!: VillageState;
+  private worldState!: WorldState;
   private dialogueJustEnded = false;
+  private mKey!: Phaser.Input.Keyboard.Key;
+
+  // Village discovery
+  private villageSprites: Map<string, Phaser.GameObjects.GameObject[]> = new Map();
+  private discoveryPopup: Phaser.GameObjects.Text | null = null;
+  private discoveryTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor() {
     super({ key: 'OverworldScene' });
   }
 
   create(data?: { fromBuilding?: boolean; buildingRef?: string }) {
-    // Generate village from mock catalog
-    const members = getTeamMembers(platformTeam);
-    const components = getTeamComponents(platformTeam);
-    const apis = getTeamApis(platformTeam);
-    this.villageState = generateVillage(platformTeam, components, apis, members);
+    // Generate world from all teams
+    const teams = getAllTeams();
+    this.worldState = generateWorld(teams);
 
     // Generate tile map
-    const mapData = generateOverworldMapData(MAP_WIDTH, MAP_HEIGHT, this.villageState);
+    const mapData = generateWorldMapData(MAP_WIDTH, MAP_HEIGHT, this.worldState);
 
     const tilemap = this.make.tilemap({
       data: mapData,
@@ -56,31 +57,66 @@ export class OverworldScene extends Phaser.Scene {
     collisionLayer.setCollision([2, 4]);
 
     // Determine player spawn
-    let spawnX = 60 * TILE_SIZE;
-    let spawnY = 70 * TILE_SIZE;
+    let spawnX = 100 * TILE_SIZE;
+    let spawnY = 80 * TILE_SIZE;
     if (data?.fromBuilding && data.buildingRef) {
-      const building = this.villageState.buildings.find(
-        (b) => b.entityRef === data.buildingRef,
-      );
-      if (building) {
-        spawnX = (building.position.x + 1.5) * TILE_SIZE;
-        spawnY = (building.position.y + 4) * TILE_SIZE;
+      for (const village of this.worldState.villages) {
+        const building = village.buildings.find((b) => b.entityRef === data.buildingRef);
+        if (building) {
+          spawnX = (building.position.x + 1.5) * TILE_SIZE;
+          spawnY = (building.position.y + 4) * TILE_SIZE;
+          break;
+        }
       }
     }
 
     // Create player
     this.player = new Player(this, spawnX, spawnY);
+    this.player.sprite.setCollideWorldBounds(true);
     this.physics.add.collider(this.player.sprite, collisionLayer);
 
-    // Place buildings
-    for (const building of this.villageState.buildings) {
-      this.placeBuilding(building);
-    }
-
-    // Place NPCs
+    // Place all villages
     this.npcs = [];
-    for (const npcState of this.villageState.npcs) {
-      this.placeNPC(npcState);
+    this.buildingZones = [];
+    this.villageSprites = new Map();
+
+    for (const village of this.worldState.villages) {
+      const sprites: Phaser.GameObjects.GameObject[] = [];
+
+      // Village name banner
+      const bannerX = (village.worldPosition.x + 20) * TILE_SIZE;
+      const bannerY = (village.worldPosition.y + 1) * TILE_SIZE;
+      const banner = this.add.text(bannerX, bannerY, village.teamName, {
+        fontSize: '14px',
+        color: '#ffe0a0',
+        backgroundColor: '#000000aa',
+        padding: { x: 6, y: 3 },
+      });
+      banner.setOrigin(0.5, 0.5);
+      banner.setDepth(1000);
+      sprites.push(banner);
+
+      // Place buildings
+      for (const building of village.buildings) {
+        const placed = this.placeBuilding(building);
+        sprites.push(...placed);
+      }
+
+      // Place NPCs
+      for (const npcState of village.npcs) {
+        const npc = this.placeNPC(npcState);
+        sprites.push(npc.sprite);
+      }
+
+      this.villageSprites.set(village.teamRef, sprites);
+
+      // Set initial alpha based on discovery state
+      const discovered = useGameStore.getState().discoveredVillages.includes(village.teamRef);
+      if (!discovered) {
+        for (const s of sprites) {
+          if ('setAlpha' in s) (s as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(0.3);
+        }
+      }
     }
 
     // Camera
@@ -100,23 +136,26 @@ export class OverworldScene extends Phaser.Scene {
     // World bounds
     this.physics.world.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
 
-    // Village name banner
-    const nameText = this.add.text(
-      60 * TILE_SIZE,
-      5 * TILE_SIZE,
-      this.villageState.teamName,
-      {
-        fontSize: '14px',
-        color: '#ffe0a0',
-        backgroundColor: '#000000aa',
-        padding: { x: 6, y: 3 },
-      },
-    );
-    nameText.setOrigin(0.5, 0.5);
-    nameText.setDepth(1000);
+    // M key for mini-map toggle
+    this.mKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
+    // Discovery popup (reusable)
+    this.discoveryPopup = this.add.text(0, 0, '', {
+      fontSize: '16px',
+      fontStyle: 'bold',
+      color: '#ffd700',
+      backgroundColor: '#000000cc',
+      padding: { x: 10, y: 6 },
+    });
+    this.discoveryPopup.setOrigin(0.5, 0.5);
+    this.discoveryPopup.setDepth(2000);
+    this.discoveryPopup.setScrollFactor(0);
+    this.discoveryPopup.setPosition(400, 80);
+    this.discoveryPopup.setVisible(false);
   }
 
-  private placeBuilding(building: BuildingState) {
+  private placeBuilding(building: BuildingState): Phaser.GameObjects.GameObject[] {
+    const placed: Phaser.GameObjects.GameObject[] = [];
     const bx = building.position.x * TILE_SIZE;
     const by = building.position.y * TILE_SIZE;
 
@@ -126,6 +165,7 @@ export class OverworldScene extends Phaser.Scene {
       'building',
     );
     sprite.setDepth(by + TILE_SIZE * 3);
+    placed.push(sprite);
 
     // Building name label
     const label = this.add.text(
@@ -141,8 +181,9 @@ export class OverworldScene extends Phaser.Scene {
     );
     label.setOrigin(0.5, 1);
     label.setDepth(1000);
+    placed.push(label);
 
-    // Entry zone in front of door
+    // Entry zone
     const zone = this.add.zone(
       bx + TILE_SIZE * 1.5,
       by + TILE_SIZE * 3 + 4,
@@ -152,24 +193,14 @@ export class OverworldScene extends Phaser.Scene {
     this.physics.add.existing(zone, true);
     this.buildingZones.push({ zone, entityRef: building.entityRef });
 
-    // Collision walls around building
+    // Collision walls
     const wallDefs = [
       { x: bx, y: by, w: TILE_SIZE * 3, h: TILE_SIZE * 2.5 },
       { x: bx, y: by + TILE_SIZE * 2.5, w: TILE_SIZE * 1, h: TILE_SIZE * 0.5 },
-      {
-        x: bx + TILE_SIZE * 2,
-        y: by + TILE_SIZE * 2.5,
-        w: TILE_SIZE * 1,
-        h: TILE_SIZE * 0.5,
-      },
+      { x: bx + TILE_SIZE * 2, y: by + TILE_SIZE * 2.5, w: TILE_SIZE * 1, h: TILE_SIZE * 0.5 },
     ];
     for (const def of wallDefs) {
-      const wallBody = this.add.zone(
-        def.x + def.w / 2,
-        def.y + def.h / 2,
-        def.w,
-        def.h,
-      );
+      const wallBody = this.add.zone(def.x + def.w / 2, def.y + def.h / 2, def.w, def.h);
       this.physics.add.existing(wallBody, true);
       this.physics.add.collider(this.player.sprite, wallBody);
     }
@@ -178,6 +209,8 @@ export class OverworldScene extends Phaser.Scene {
     this.physics.add.overlap(this.player.sprite, zone, () => {
       this.nearTarget = { type: 'building', ref: building.entityRef };
     });
+
+    return placed;
   }
 
   private placeNPC(npcState: {
@@ -185,7 +218,7 @@ export class OverworldScene extends Phaser.Scene {
     name: string;
     position: { x: number; y: number };
     spriteIndex: number;
-  }) {
+  }): NPC {
     const px = npcState.position.x * TILE_SIZE + TILE_SIZE / 2;
     const py = npcState.position.y * TILE_SIZE + TILE_SIZE / 2;
     const textureKey = `npc_${npcState.spriteIndex % 6}`;
@@ -193,19 +226,30 @@ export class OverworldScene extends Phaser.Scene {
     const npc = new NPC(this, px, py, textureKey, npcState.entityRef, npcState.name);
     this.npcs.push(npc);
 
-    // Collision so player can't walk through NPC
     this.physics.add.collider(this.player.sprite, npc.sprite);
 
-    // Interaction zone (larger than sprite)
     const interactZone = this.add.zone(px, py, TILE_SIZE * 2.5, TILE_SIZE * 2.5);
     this.physics.add.existing(interactZone, true);
     this.physics.add.overlap(this.player.sprite, interactZone, () => {
       this.nearTarget = { type: 'npc', ref: npcState.entityRef };
     });
+
+    return npc;
   }
 
   update(_time: number) {
     const store = useGameStore.getState();
+
+    // M key toggle
+    if (Phaser.Input.Keyboard.JustDown(this.mKey)) {
+      store.toggleMiniMap();
+    }
+
+    // Update player position in store (for mini-map)
+    store.updatePlayerPosition(this.player.sprite.x, this.player.sprite.y);
+
+    // Check village discovery
+    this.checkVillageDiscovery();
 
     // If dialogue is active, freeze player
     if (store.dialogueActive) {
@@ -214,10 +258,8 @@ export class OverworldScene extends Phaser.Scene {
 
       if (this.player.interactPressed()) {
         store.advanceDialogue();
-        // Check if dialogue just ended
         if (!useGameStore.getState().dialogueActive) {
           this.dialogueJustEnded = true;
-          // Show detail panel for the NPC
           const ref = store.dialogueEntityRef;
           if (ref) {
             const entity = getEntityByRef(ref);
@@ -276,6 +318,54 @@ export class OverworldScene extends Phaser.Scene {
     this.nearTarget = null;
   }
 
+  private checkVillageDiscovery() {
+    const store = useGameStore.getState();
+    const px = this.player.sprite.x / TILE_SIZE;
+    const py = this.player.sprite.y / TILE_SIZE;
+
+    for (const village of this.worldState.villages) {
+      if (store.discoveredVillages.includes(village.teamRef)) continue;
+
+      const vcx = village.worldPosition.x + 20;
+      const vcy = village.worldPosition.y + 15;
+      const dx = Math.abs(px - vcx);
+      const dy = Math.abs(py - vcy);
+
+      if (dx < 25 && dy < 20) {
+        // Discover this village
+        store.discoverVillage(village.teamRef);
+
+        // Reveal sprites
+        const sprites = this.villageSprites.get(village.teamRef);
+        if (sprites) {
+          for (const s of sprites) {
+            if ('setAlpha' in s) (s as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(1);
+          }
+        }
+
+        // Show discovery popup
+        this.showDiscoveryPopup(village.teamName);
+      }
+    }
+  }
+
+  private showDiscoveryPopup(name: string) {
+    if (!this.discoveryPopup) return;
+    this.discoveryPopup.setText(`Discovered: ${name}!`);
+    this.discoveryPopup.setVisible(true);
+    this.discoveryPopup.setAlpha(1);
+
+    if (this.discoveryTimer) this.discoveryTimer.destroy();
+    this.discoveryTimer = this.time.delayedCall(2500, () => {
+      this.tweens.add({
+        targets: this.discoveryPopup,
+        alpha: 0,
+        duration: 500,
+        onComplete: () => this.discoveryPopup?.setVisible(false),
+      });
+    });
+  }
+
   private startNPCDialogue(ref: string) {
     const entity = getEntityByRef(ref);
     if (!entity) return;
@@ -294,7 +384,6 @@ export class OverworldScene extends Phaser.Scene {
     useGameStore.getState().startDialogue(dialogueLines, ref);
     useGameStore.getState().unlockEntity(ref);
 
-    // Make the NPC face the player
     const npc = this.npcs.find((n) => n.entityRef === ref);
     if (npc) {
       npc.facePlayer(this.player.sprite.x, this.player.sprite.y);

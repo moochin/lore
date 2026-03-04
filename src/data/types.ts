@@ -49,6 +49,11 @@ export interface BuildingState {
 export interface VillageState {
   teamRef: string;
   teamName: string;
+  worldPosition: { x: number; y: number }; // tile coordinates on overworld
   buildings: BuildingState[];
   npcs: NPCState[];
+}
+
+export interface WorldState {
+  villages: VillageState[];
 }

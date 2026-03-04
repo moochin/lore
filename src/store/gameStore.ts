@@ -29,9 +29,21 @@ interface GameState {
   unlockedEntities: string[];
   unlockEntity: (ref: string) => void;
 
+  // Village discovery
+  discoveredVillages: string[];
+  discoverVillage: (ref: string) => void;
+
   // Active building (for BuildingScene)
   activeBuilding: string | null;
   setActiveBuilding: (ref: string | null) => void;
+
+  // Player position (for mini-map)
+  playerPosition: { x: number; y: number };
+  updatePlayerPosition: (x: number, y: number) => void;
+
+  // Mini-map
+  miniMapVisible: boolean;
+  toggleMiniMap: () => void;
 
   // Intro modal
   introShown: boolean;
@@ -84,9 +96,26 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  // Village discovery
+  discoveredVillages: [],
+  discoverVillage: (ref) => {
+    const { discoveredVillages } = get();
+    if (!discoveredVillages.includes(ref)) {
+      set({ discoveredVillages: [...discoveredVillages, ref] });
+    }
+  },
+
   // Active building
   activeBuilding: null,
   setActiveBuilding: (ref) => set({ activeBuilding: ref }),
+
+  // Player position
+  playerPosition: { x: 0, y: 0 },
+  updatePlayerPosition: (x, y) => set({ playerPosition: { x, y } }),
+
+  // Mini-map
+  miniMapVisible: true,
+  toggleMiniMap: () => set((s) => ({ miniMapVisible: !s.miniMapVisible })),
 
   // Intro modal
   introShown: false,

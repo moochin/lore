@@ -61,7 +61,7 @@ export function IntroModal() {
             margin: '0 0 24px',
           }}
         >
-          Explore the Platform Guild village, talk to its members,
+          Explore the villages of four guilds, talk to their members,
           and discover the services they maintain.
         </p>
 
@@ -93,6 +93,8 @@ export function IntroModal() {
             <Desc>Talk to NPCs / Enter buildings</Desc>
             <Key>Q</Key>
             <Desc>View full details (inside buildings)</Desc>
+            <Key>M</Key>
+            <Desc>Toggle mini-map</Desc>
             <Key>ESC</Key>
             <Desc>Close panels</Desc>
           </div>

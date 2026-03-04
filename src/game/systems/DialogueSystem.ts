@@ -1,5 +1,5 @@
 import { Entity } from '../../data/types';
-import { entityRef, getEntityByRef } from '../../data/mock-catalog';
+import { entityRef, getEntityByRef, getApiOwnerTeam } from '../../data/mock-catalog';
 
 /**
  * Generates RPG-flavored dialogue lines for an NPC based on their entity data.
@@ -13,11 +13,18 @@ export function generateNPCDialogue(npcEntity: Entity): string[] {
 
   const lines: string[] = [];
 
+  // Determine team name
+  const teamRef = npcEntity.relations?.find((r) => r.type === 'memberOf')?.targetRef;
+  const teamEntity = teamRef ? getEntityByRef(teamRef) : undefined;
+  const teamName = teamEntity
+    ? (teamEntity.spec.profile as { displayName?: string })?.displayName ?? teamEntity.metadata.name
+    : 'this guild';
+
   // Greeting
   const greetings = [
-    `Hail, traveler! I am ${displayName}, ${role} of the Platform Guild.`,
-    `Well met! The name's ${displayName}. I serve as ${role} here.`,
-    `Greetings, wanderer. I'm ${displayName} — ${role} by trade.`,
+    `Hail, traveler! I am ${displayName}, ${role} of the ${teamName}.`,
+    `Well met! The name's ${displayName}. I serve as ${role} in the ${teamName}.`,
+    `Greetings, wanderer. I'm ${displayName} — ${role} of the ${teamName}.`,
   ];
   lines.push(greetings[hashString(displayName) % greetings.length]);
 
@@ -49,6 +56,33 @@ export function generateNPCDialogue(npcEntity: Entity): string[] {
       lines.push(
         `I guard the ancient scrolls of the ${owned.metadata.name} (${apiType}). Seek them within its halls.`,
       );
+    }
+  }
+
+  // Cross-team API references
+  const consumedApis =
+    npcEntity.relations
+      ?.filter((r) => r.type === 'ownerOf')
+      .flatMap((r) => {
+        const owned = getEntityByRef(r.targetRef);
+        if (!owned) return [];
+        return owned.relations?.filter((rel) => rel.type === 'consumesApi') ?? [];
+      }) ?? [];
+
+  for (const apiRel of consumedApis) {
+    const ownerTeam = getApiOwnerTeam(apiRel.targetRef);
+    if (ownerTeam && ownerTeam !== teamEntity) {
+      const otherTeamName =
+        (ownerTeam.spec.profile as { displayName?: string })?.displayName ?? ownerTeam.metadata.name;
+      const apiEntity = getEntityByRef(apiRel.targetRef);
+      const apiName = apiEntity?.metadata.name ?? 'their API';
+      const crossLines = [
+        `We depend on the ${otherTeamName}'s ${apiName} — reliable folk, they are.`,
+        `Our work connects to the ${otherTeamName} village through their ${apiName}.`,
+        `The ${otherTeamName} provides the ${apiName} that powers part of our craft.`,
+      ];
+      lines.push(crossLines[hashString(apiName) % crossLines.length]);
+      break; // One cross-reference per NPC is enough
     }
   }
 
