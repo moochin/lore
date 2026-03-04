@@ -78,11 +78,43 @@ export class CatalogClient {
   }
 
   /**
+   * For localhost connections with empty/invalid tokens, attempt to obtain
+   * a guest token automatically. This supports local development with guest auth.
+   */
+  private async tryGetGuestToken(): Promise<string | null> {
+    try {
+      // Only attempt guest token retrieval for localhost connections
+      if (!this.base.includes('localhost') && !this.base.includes('127.0.0.1')) {
+        return null;
+      }
+
+      const guestTokenUrl = `${this.base}/api/auth/guest/token`;
+      const res = await fetch(guestTokenUrl, { method: 'GET' });
+
+      if (!res.ok) return null;
+
+      const data = await res.json() as { token?: string };
+      return data.token ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Lightweight connectivity check — fetches a single entity.
    * Returns true if the request succeeds (token is valid and URL is correct).
+   * For localhost guest auth, automatically obtains a guest token if needed.
    */
   async testConnection(): Promise<{ ok: true } | { ok: false; reason: string }> {
     try {
+      // If no token provided or appears invalid, try to get a guest token for localhost
+      if (!this.token || this.token.length === 0) {
+        const guestToken = await this.tryGetGuestToken();
+        if (guestToken) {
+          this.token = guestToken;
+        }
+      }
+
       await this.get<CatalogResponse>('entities?limit=1');
       return { ok: true };
     } catch (err) {
