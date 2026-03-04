@@ -10,6 +10,61 @@ import type { Entity } from '../../data/types';
 const ROOM_WIDTH = 20;
 const ROOM_HEIGHT = 14;
 
+// ── Furniture Layout System ──────────────────────────────────
+
+type InteriorTheme = 'service' | 'website' | 'library' | 'api';
+
+interface FurniturePiece {
+  key: string;
+  tileX: number;
+  tileY: number;
+  widthTiles: number;
+  heightTiles: number;
+  collision: boolean;
+}
+
+const FURNITURE_LAYOUTS: Record<InteriorTheme, FurniturePiece[]> = {
+  service: [
+    { key: 'furn_fireplace', tileX: 17, tileY: 1, widthTiles: 1, heightTiles: 2, collision: true },
+    { key: 'furn_anvil',     tileX: 15, tileY: 3, widthTiles: 1, heightTiles: 1, collision: true },
+    { key: 'furn_workbench', tileX: 13, tileY: 1, widthTiles: 2, heightTiles: 1, collision: true },
+    { key: 'furn_crate',     tileX: 1,  tileY: 8, widthTiles: 1, heightTiles: 1, collision: true },
+    { key: 'furn_crate',     tileX: 2,  tileY: 8, widthTiles: 1, heightTiles: 1, collision: true },
+    { key: 'furn_rug',       tileX: 10, tileY: 5, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_candle',    tileX: 8,  tileY: 1, widthTiles: 1, heightTiles: 1, collision: false },
+  ],
+  website: [
+    { key: 'furn_desk',  tileX: 14, tileY: 2, widthTiles: 2, heightTiles: 1, collision: true },
+    { key: 'furn_chair', tileX: 14, tileY: 3, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_desk',  tileX: 14, tileY: 5, widthTiles: 2, heightTiles: 1, collision: true },
+    { key: 'furn_chair', tileX: 14, tileY: 6, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_plant', tileX: 17, tileY: 1, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_plant', tileX: 1,  tileY: 10, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_rug',   tileX: 10, tileY: 9, widthTiles: 1, heightTiles: 1, collision: false },
+  ],
+  library: [
+    { key: 'furn_bookshelf',   tileX: 15, tileY: 1, widthTiles: 1, heightTiles: 2, collision: true },
+    { key: 'furn_bookshelf',   tileX: 17, tileY: 1, widthTiles: 1, heightTiles: 2, collision: true },
+    { key: 'furn_bookshelf',   tileX: 13, tileY: 1, widthTiles: 1, heightTiles: 2, collision: true },
+    { key: 'furn_reading_desk', tileX: 10, tileY: 3, widthTiles: 1, heightTiles: 1, collision: true },
+    { key: 'furn_candle',      tileX: 11, tileY: 3, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_scroll_rack', tileX: 1,  tileY: 8, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_scroll_rack', tileX: 1,  tileY: 10, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_rug',         tileX: 10, tileY: 5, widthTiles: 1, heightTiles: 1, collision: false },
+  ],
+  api: [
+    { key: 'furn_pillar',      tileX: 8,  tileY: 1, widthTiles: 1, heightTiles: 2, collision: true },
+    { key: 'furn_pillar',      tileX: 12, tileY: 1, widthTiles: 1, heightTiles: 2, collision: true },
+    { key: 'furn_pedestal',    tileX: 16, tileY: 3, widthTiles: 1, heightTiles: 1, collision: true },
+    { key: 'furn_pedestal',    tileX: 16, tileY: 6, widthTiles: 1, heightTiles: 1, collision: true },
+    { key: 'furn_rune_circle', tileX: 14, tileY: 8, widthTiles: 2, heightTiles: 2, collision: false },
+    { key: 'furn_candle',      tileX: 17, tileY: 3, widthTiles: 1, heightTiles: 1, collision: false },
+    { key: 'furn_candle',      tileX: 17, tileY: 6, widthTiles: 1, heightTiles: 1, collision: false },
+  ],
+};
+
+// ── Scene ─────────────────────────────────────────────────────
+
 function generateBuildingMap(): number[][] {
   const map: number[][] = [];
   for (let y = 0; y < ROOM_HEIGHT; y++) {
@@ -87,6 +142,9 @@ export class BuildingScene extends Phaser.Scene {
     this.player.sprite.setCollideWorldBounds(true);
     this.physics.add.collider(this.player.sprite, collisionLayer);
 
+    // Place themed furniture
+    this.placeFurniture();
+
     // Exit zone
     const exitZone = this.add.zone(
       9.5 * TILE_SIZE,
@@ -162,6 +220,39 @@ export class BuildingScene extends Phaser.Scene {
 
     // Render building content
     this.renderBuildingContent();
+  }
+
+  private getInteriorTheme(): InteriorTheme {
+    if (!this.componentEntity) return 'service';
+    if (this.componentEntity.kind === 'API') return 'api';
+    const specType = (this.componentEntity.spec.type as string) ?? 'service';
+    if (specType === 'website') return 'website';
+    if (specType === 'library') return 'library';
+    return 'service';
+  }
+
+  private placeFurniture() {
+    const theme = this.getInteriorTheme();
+    const layout = FURNITURE_LAYOUTS[theme];
+
+    for (const piece of layout) {
+      const px = piece.tileX * TILE_SIZE + (piece.widthTiles * TILE_SIZE) / 2;
+      const py = piece.tileY * TILE_SIZE + (piece.heightTiles * TILE_SIZE) / 2;
+
+      const img = this.add.image(px, py, piece.key);
+
+      if (piece.collision) {
+        // Depth sort by bottom edge so player walks behind when above
+        img.setDepth(piece.tileY * TILE_SIZE + piece.heightTiles * TILE_SIZE);
+        // Static collision zone
+        const zone = this.add.zone(px, py, piece.widthTiles * TILE_SIZE, piece.heightTiles * TILE_SIZE);
+        this.physics.add.existing(zone, true);
+        this.physics.add.collider(this.player.sprite, zone);
+      } else {
+        // Walkable — render below player
+        img.setDepth(1);
+      }
+    }
   }
 
   private renderBuildingContent() {
@@ -282,6 +373,9 @@ export class BuildingScene extends Phaser.Scene {
     }
 
     this.player.update();
+
+    // Depth sort player so they walk behind tall furniture
+    this.player.sprite.setDepth(this.player.sprite.y);
 
     if (this.interiorNpc) {
       this.interiorNpc.update(0);

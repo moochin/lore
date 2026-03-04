@@ -19,6 +19,7 @@ export class BootScene extends Phaser.Scene {
     this.generateTileset();
     this.generatePlayerSprite();
     this.generateBuildingSprites();
+    this.generateFurnitureSprites();
     this.generateNPCSprites();
     this.scene.start('OverworldScene');
   }
@@ -536,5 +537,374 @@ export class BootScene extends Phaser.Scene {
     ctx.fillRect(17, BH - 17, 14, 1);
 
     canvas.refresh();
+  }
+
+  // ── Furniture Sprites ──────────────────────────────────────
+
+  private generateFurnitureSprites() {
+    const T = TILE_SIZE;
+
+    // ── Shared ──
+
+    // Wooden crate (16x16)
+    const crate = this.textures.createCanvas('furn_crate', T, T)!;
+    const crCtx = crate.getContext();
+    crCtx.fillStyle = '#8b6b3e';
+    crCtx.fillRect(2, 3, 12, 11);
+    crCtx.fillStyle = '#7a5a2e';
+    crCtx.fillRect(2, 3, 12, 1);
+    crCtx.fillRect(2, 8, 12, 1);
+    crCtx.fillRect(2, 13, 12, 1);
+    crCtx.fillStyle = '#6b4a1e';
+    crCtx.fillRect(2, 3, 1, 11);
+    crCtx.fillRect(13, 3, 1, 11);
+    crCtx.fillStyle = '#9c7c4e';
+    crCtx.fillRect(4, 5, 8, 2);
+    crate.refresh();
+
+    // Floor rug (16x16)
+    const rug = this.textures.createCanvas('furn_rug', T, T)!;
+    const rgCtx = rug.getContext();
+    rgCtx.fillStyle = '#8b3333';
+    rgCtx.fillRect(1, 2, 14, 12);
+    rgCtx.fillStyle = '#aa4444';
+    rgCtx.fillRect(2, 3, 12, 10);
+    rgCtx.fillStyle = '#cc8844';
+    rgCtx.fillRect(3, 4, 10, 1);
+    rgCtx.fillRect(3, 11, 10, 1);
+    rgCtx.fillRect(3, 4, 1, 8);
+    rgCtx.fillRect(12, 4, 1, 8);
+    rug.refresh();
+
+    // Candle (16x16)
+    const candle = this.textures.createCanvas('furn_candle', T, T)!;
+    const caCtx = candle.getContext();
+    caCtx.fillStyle = '#8b7355';
+    caCtx.fillRect(5, 12, 6, 2); // dish
+    caCtx.fillStyle = '#eeeedd';
+    caCtx.fillRect(7, 6, 2, 7); // wax
+    caCtx.fillStyle = '#ffaa22';
+    caCtx.fillRect(7, 3, 2, 3); // flame body
+    caCtx.fillStyle = '#ffdd44';
+    caCtx.fillRect(7, 4, 2, 1); // flame bright
+    caCtx.fillStyle = '#ff6600';
+    caCtx.fillRect(7, 3, 2, 1); // flame tip
+    candle.refresh();
+
+    // ── Forge theme ──
+
+    // Anvil (16x16)
+    const anvil = this.textures.createCanvas('furn_anvil', T, T)!;
+    const anCtx = anvil.getContext();
+    anCtx.fillStyle = '#555555';
+    anCtx.fillRect(3, 8, 10, 5); // base
+    anCtx.fillStyle = '#666666';
+    anCtx.fillRect(2, 5, 12, 3); // face
+    anCtx.fillStyle = '#444444';
+    anCtx.fillRect(1, 4, 4, 2); // horn
+    anCtx.fillStyle = '#777777';
+    anCtx.fillRect(4, 6, 8, 1); // highlight
+    anvil.refresh();
+
+    // Fireplace (16x32 — 1 wide, 2 tall)
+    const fp = this.textures.createCanvas('furn_fireplace', T, T * 2)!;
+    const fpCtx = fp.getContext();
+    // Stone frame
+    fpCtx.fillStyle = '#777777';
+    fpCtx.fillRect(0, 0, T, T * 2);
+    fpCtx.fillStyle = '#666666';
+    fpCtx.fillRect(1, 0, 14, 4); // mantle
+    fpCtx.fillRect(0, 0, 3, T * 2); // left pillar
+    fpCtx.fillRect(13, 0, 3, T * 2); // right pillar
+    // Firebox
+    fpCtx.fillStyle = '#222222';
+    fpCtx.fillRect(3, 6, 10, 20);
+    // Fire
+    fpCtx.fillStyle = '#ff4400';
+    fpCtx.fillRect(4, 16, 8, 8);
+    fpCtx.fillStyle = '#ff8833';
+    fpCtx.fillRect(5, 14, 6, 6);
+    fpCtx.fillStyle = '#ffcc22';
+    fpCtx.fillRect(6, 12, 4, 5);
+    // Logs
+    fpCtx.fillStyle = '#5a3a1a';
+    fpCtx.fillRect(4, 24, 8, 3);
+    fpCtx.fillStyle = '#6b4a2a';
+    fpCtx.fillRect(5, 22, 6, 3);
+    fp.refresh();
+
+    // Workbench (32x16 — 2 wide, 1 tall)
+    const wb = this.textures.createCanvas('furn_workbench', T * 2, T)!;
+    const wbCtx = wb.getContext();
+    // Table top
+    wbCtx.fillStyle = '#8b6b3e';
+    wbCtx.fillRect(0, 3, 32, 5);
+    wbCtx.fillStyle = '#7a5a2e';
+    wbCtx.fillRect(0, 3, 32, 1);
+    // Legs
+    wbCtx.fillStyle = '#6b4a1e';
+    wbCtx.fillRect(1, 8, 3, 7);
+    wbCtx.fillRect(28, 8, 3, 7);
+    wbCtx.fillRect(14, 8, 3, 7);
+    // Tools on top
+    wbCtx.fillStyle = '#888888'; // hammer head
+    wbCtx.fillRect(5, 1, 4, 2);
+    wbCtx.fillStyle = '#6b4a1e'; // hammer handle
+    wbCtx.fillRect(6, 3, 2, 2);
+    wbCtx.fillStyle = '#aa5522'; // tongs
+    wbCtx.fillRect(20, 1, 6, 2);
+    wb.refresh();
+
+    // ── Office theme ──
+
+    // Desk with monitor (32x16)
+    const desk = this.textures.createCanvas('furn_desk', T * 2, T)!;
+    const dkCtx = desk.getContext();
+    // Desktop surface
+    dkCtx.fillStyle = '#7a6a5a';
+    dkCtx.fillRect(0, 5, 32, 4);
+    dkCtx.fillStyle = '#6a5a4a';
+    dkCtx.fillRect(0, 5, 32, 1);
+    // Legs
+    dkCtx.fillStyle = '#5a4a3a';
+    dkCtx.fillRect(1, 9, 2, 6);
+    dkCtx.fillRect(29, 9, 2, 6);
+    // Monitor
+    dkCtx.fillStyle = '#333333';
+    dkCtx.fillRect(10, 0, 12, 5);
+    dkCtx.fillStyle = '#4488aa';
+    dkCtx.fillRect(11, 1, 10, 3); // screen
+    // Monitor stand
+    dkCtx.fillStyle = '#444444';
+    dkCtx.fillRect(14, 5, 4, 1);
+    // Keyboard
+    dkCtx.fillStyle = '#555555';
+    dkCtx.fillRect(9, 6, 8, 2);
+    desk.refresh();
+
+    // Chair (16x16)
+    const chair = this.textures.createCanvas('furn_chair', T, T)!;
+    const chCtx = chair.getContext();
+    // Back
+    chCtx.fillStyle = '#6b4a2a';
+    chCtx.fillRect(4, 2, 8, 3);
+    // Seat
+    chCtx.fillStyle = '#8b6a4a';
+    chCtx.fillRect(3, 5, 10, 5);
+    // Legs
+    chCtx.fillStyle = '#5a3a1a';
+    chCtx.fillRect(4, 10, 2, 4);
+    chCtx.fillRect(10, 10, 2, 4);
+    chair.refresh();
+
+    // Potted plant (16x16)
+    const plant = this.textures.createCanvas('furn_plant', T, T)!;
+    const plCtx = plant.getContext();
+    // Pot
+    plCtx.fillStyle = '#aa6633';
+    plCtx.fillRect(5, 10, 6, 5);
+    plCtx.fillStyle = '#994422';
+    plCtx.fillRect(4, 10, 8, 1);
+    // Leaves
+    plCtx.fillStyle = '#33aa44';
+    plCtx.fillRect(4, 4, 8, 6);
+    plCtx.fillStyle = '#44bb55';
+    plCtx.fillRect(3, 5, 3, 3);
+    plCtx.fillRect(10, 5, 3, 3);
+    plCtx.fillStyle = '#22882e';
+    plCtx.fillRect(6, 2, 4, 3);
+    // Stem
+    plCtx.fillStyle = '#447733';
+    plCtx.fillRect(7, 8, 2, 3);
+    plant.refresh();
+
+    // ── Library theme ──
+
+    // Bookshelf (16x32 — 1 wide, 2 tall)
+    const bs = this.textures.createCanvas('furn_bookshelf', T, T * 2)!;
+    const bsCtx = bs.getContext();
+    // Frame
+    bsCtx.fillStyle = '#6b4226';
+    bsCtx.fillRect(0, 0, T, T * 2);
+    bsCtx.fillStyle = '#8b5a2b';
+    bsCtx.fillRect(1, 1, 14, 30);
+    // Shelves
+    bsCtx.fillStyle = '#6b4226';
+    bsCtx.fillRect(1, 7, 14, 1);
+    bsCtx.fillRect(1, 15, 14, 1);
+    bsCtx.fillRect(1, 23, 14, 1);
+    // Books — row 1
+    bsCtx.fillStyle = '#aa3333';
+    bsCtx.fillRect(2, 1, 2, 6);
+    bsCtx.fillStyle = '#3333aa';
+    bsCtx.fillRect(5, 2, 2, 5);
+    bsCtx.fillStyle = '#33aa33';
+    bsCtx.fillRect(8, 1, 2, 6);
+    bsCtx.fillStyle = '#aa8833';
+    bsCtx.fillRect(11, 2, 2, 5);
+    // Books — row 2
+    bsCtx.fillStyle = '#8833aa';
+    bsCtx.fillRect(2, 8, 2, 7);
+    bsCtx.fillStyle = '#aa3355';
+    bsCtx.fillRect(5, 9, 2, 6);
+    bsCtx.fillStyle = '#3388aa';
+    bsCtx.fillRect(8, 8, 2, 7);
+    bsCtx.fillStyle = '#88aa33';
+    bsCtx.fillRect(11, 9, 2, 6);
+    // Books — row 3
+    bsCtx.fillStyle = '#555588';
+    bsCtx.fillRect(2, 16, 2, 7);
+    bsCtx.fillStyle = '#885533';
+    bsCtx.fillRect(5, 17, 2, 6);
+    bsCtx.fillStyle = '#338855';
+    bsCtx.fillRect(8, 16, 2, 7);
+    bsCtx.fillStyle = '#aa5533';
+    bsCtx.fillRect(11, 17, 2, 6);
+    // Bottom section — scrolls
+    bsCtx.fillStyle = '#ddc088';
+    bsCtx.fillRect(3, 24, 10, 3);
+    bsCtx.fillStyle = '#ccb078';
+    bsCtx.fillRect(4, 25, 3, 1);
+    bsCtx.fillRect(9, 25, 3, 1);
+    bs.refresh();
+
+    // Reading desk (16x16)
+    const rd = this.textures.createCanvas('furn_reading_desk', T, T)!;
+    const rdCtx = rd.getContext();
+    // Desk
+    rdCtx.fillStyle = '#7a5a3a';
+    rdCtx.fillRect(1, 5, 14, 4);
+    rdCtx.fillStyle = '#6a4a2a';
+    rdCtx.fillRect(1, 5, 14, 1);
+    // Legs
+    rdCtx.fillStyle = '#5a3a1a';
+    rdCtx.fillRect(2, 9, 2, 5);
+    rdCtx.fillRect(12, 9, 2, 5);
+    // Open book
+    rdCtx.fillStyle = '#eeddbb';
+    rdCtx.fillRect(3, 2, 10, 4);
+    rdCtx.fillStyle = '#444444';
+    rdCtx.fillRect(8, 2, 1, 4); // spine
+    rdCtx.fillStyle = '#888888'; // text lines
+    rdCtx.fillRect(4, 3, 3, 1);
+    rdCtx.fillRect(4, 5, 2, 1);
+    rdCtx.fillRect(9, 3, 3, 1);
+    rdCtx.fillRect(9, 5, 4, 1);
+    rd.refresh();
+
+    // Scroll rack (16x16)
+    const sr = this.textures.createCanvas('furn_scroll_rack', T, T)!;
+    const srCtx = sr.getContext();
+    // Frame
+    srCtx.fillStyle = '#6b4a2a';
+    srCtx.fillRect(2, 1, 2, 14);
+    srCtx.fillRect(12, 1, 2, 14);
+    srCtx.fillRect(2, 1, 12, 1);
+    srCtx.fillRect(2, 7, 12, 1);
+    srCtx.fillRect(2, 13, 12, 1);
+    // Scrolls
+    srCtx.fillStyle = '#ddc088';
+    srCtx.fillRect(5, 2, 6, 2);
+    srCtx.fillRect(5, 4, 5, 2);
+    srCtx.fillStyle = '#ccb078';
+    srCtx.fillRect(5, 8, 6, 2);
+    srCtx.fillRect(6, 10, 4, 2);
+    sr.refresh();
+
+    // ── Scroll Hall theme ──
+
+    // Pedestal (16x16)
+    const ped = this.textures.createCanvas('furn_pedestal', T, T)!;
+    const peCtx = ped.getContext();
+    // Base
+    peCtx.fillStyle = '#ccccbb';
+    peCtx.fillRect(3, 12, 10, 3);
+    // Column
+    peCtx.fillStyle = '#ddddcc';
+    peCtx.fillRect(5, 4, 6, 8);
+    // Capital (top)
+    peCtx.fillStyle = '#ccccbb';
+    peCtx.fillRect(3, 2, 10, 3);
+    // Gold trim
+    peCtx.fillStyle = '#daa520';
+    peCtx.fillRect(3, 2, 10, 1);
+    peCtx.fillRect(3, 14, 10, 1);
+    // Glowing orb on top
+    peCtx.fillStyle = '#44aaff';
+    peCtx.fillRect(6, 0, 4, 2);
+    peCtx.fillStyle = '#66ccff';
+    peCtx.fillRect(7, 0, 2, 1);
+    ped.refresh();
+
+    // Pillar (16x32 — 1 wide, 2 tall)
+    const pil = this.textures.createCanvas('furn_pillar', T, T * 2)!;
+    const piCtx = pil.getContext();
+    // Base
+    piCtx.fillStyle = '#bbbbaa';
+    piCtx.fillRect(2, 28, 12, 4);
+    // Shaft
+    piCtx.fillStyle = '#ddddcc';
+    piCtx.fillRect(4, 4, 8, 24);
+    // Light side
+    piCtx.fillStyle = '#eeeedd';
+    piCtx.fillRect(4, 4, 3, 24);
+    // Capital
+    piCtx.fillStyle = '#ccccbb';
+    piCtx.fillRect(2, 0, 12, 5);
+    piCtx.fillStyle = '#bbbbaa';
+    piCtx.fillRect(3, 1, 10, 3);
+    // Gold trim
+    piCtx.fillStyle = '#daa520';
+    piCtx.fillRect(2, 0, 12, 1);
+    piCtx.fillRect(2, 4, 12, 1);
+    pil.refresh();
+
+    // Rune circle (32x32 — 2x2 tiles)
+    const rc = this.textures.createCanvas('furn_rune_circle', T * 2, T * 2)!;
+    const rcCtx = rc.getContext();
+    // Outer circle (approximated with rects)
+    rcCtx.fillStyle = '#2244aa44';
+    // Fill a rough circle
+    for (let y = 0; y < 32; y++) {
+      for (let x = 0; x < 32; x++) {
+        const dx = x - 16;
+        const dy = y - 16;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 14 && dist > 11) {
+          rcCtx.fillStyle = '#4488ff';
+          rcCtx.fillRect(x, y, 1, 1);
+        } else if (dist < 11 && dist > 9) {
+          rcCtx.fillStyle = '#2244aa33';
+          rcCtx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+    // Inner glow
+    rcCtx.fillStyle = '#44aaff44';
+    for (let y = 0; y < 32; y++) {
+      for (let x = 0; x < 32; x++) {
+        const dx = x - 16;
+        const dy = y - 16;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 8) {
+          rcCtx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+    // Rune marks at cardinal directions
+    rcCtx.fillStyle = '#88ddff';
+    rcCtx.fillRect(15, 3, 2, 3);  // N
+    rcCtx.fillRect(15, 26, 2, 3); // S
+    rcCtx.fillRect(3, 15, 3, 2);  // W
+    rcCtx.fillRect(26, 15, 3, 2); // E
+    // Diagonal marks
+    rcCtx.fillRect(6, 6, 2, 2);
+    rcCtx.fillRect(24, 6, 2, 2);
+    rcCtx.fillRect(6, 24, 2, 2);
+    rcCtx.fillRect(24, 24, 2, 2);
+    // Center dot
+    rcCtx.fillStyle = '#aaeeff';
+    rcCtx.fillRect(15, 15, 2, 2);
+    rc.refresh();
   }
 }
