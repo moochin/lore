@@ -14,8 +14,8 @@ import {
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { VillageState, BuildingState } from '../../data/types';
 
-const MAP_WIDTH = 60;
-const MAP_HEIGHT = 45;
+const MAP_WIDTH = 120;
+const MAP_HEIGHT = 90;
 
 export class OverworldScene extends Phaser.Scene {
   private player!: Player;
@@ -56,8 +56,8 @@ export class OverworldScene extends Phaser.Scene {
     collisionLayer.setCollision([2, 4]);
 
     // Determine player spawn
-    let spawnX = 30 * TILE_SIZE;
-    let spawnY = 35 * TILE_SIZE;
+    let spawnX = 60 * TILE_SIZE;
+    let spawnY = 70 * TILE_SIZE;
     if (data?.fromBuilding && data.buildingRef) {
       const building = this.villageState.buildings.find(
         (b) => b.entityRef === data.buildingRef,
@@ -102,8 +102,8 @@ export class OverworldScene extends Phaser.Scene {
 
     // Village name banner
     const nameText = this.add.text(
-      30 * TILE_SIZE,
-      3 * TILE_SIZE,
+      60 * TILE_SIZE,
+      5 * TILE_SIZE,
       this.villageState.teamName,
       {
         fontSize: '14px',

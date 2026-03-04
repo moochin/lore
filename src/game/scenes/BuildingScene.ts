@@ -7,8 +7,8 @@ import { generateBuildingInfo, generateBuildingNPCDialogue } from '../systems/Di
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { Entity } from '../../data/types';
 
-const ROOM_WIDTH = 12;
-const ROOM_HEIGHT = 10;
+const ROOM_WIDTH = 20;
+const ROOM_HEIGHT = 14;
 
 function generateBuildingMap(): number[][] {
   const map: number[][] = [];
@@ -16,7 +16,7 @@ function generateBuildingMap(): number[][] {
     const row: number[] = [];
     for (let x = 0; x < ROOM_WIDTH; x++) {
       if (x === 0 || x === ROOM_WIDTH - 1 || y === 0 || y === ROOM_HEIGHT - 1) {
-        if (y === ROOM_HEIGHT - 1 && x >= 5 && x <= 6) {
+        if (y === ROOM_HEIGHT - 1 && x >= 9 && x <= 10) {
           row.push(2); // door
         } else {
           row.push(0); // wall
@@ -73,15 +73,19 @@ export class BuildingScene extends Phaser.Scene {
     const collisionLayer = tilemap.createLayer(0, [tsWall, tsFloor, tsDoor], 0, 0)!;
     collisionLayer.setCollision([0]);
 
+    // World bounds to prevent player escaping the room
+    this.physics.world.setBounds(0, 0, ROOM_WIDTH * TILE_SIZE, ROOM_HEIGHT * TILE_SIZE);
+
     // Player near the door
-    const spawnX = 5.5 * TILE_SIZE;
+    const spawnX = 9.5 * TILE_SIZE;
     const spawnY = (ROOM_HEIGHT - 2) * TILE_SIZE;
     this.player = new Player(this, spawnX, spawnY);
+    this.player.sprite.setCollideWorldBounds(true);
     this.physics.add.collider(this.player.sprite, collisionLayer);
 
     // Exit zone
     const exitZone = this.add.zone(
-      5.5 * TILE_SIZE,
+      9.5 * TILE_SIZE,
       (ROOM_HEIGHT - 0.5) * TILE_SIZE,
       TILE_SIZE * 2,
       TILE_SIZE,
@@ -100,8 +104,8 @@ export class BuildingScene extends Phaser.Scene {
         this.ownerEntity.metadata.name;
       // Determine sprite index from owner name hash
       const spriteIdx = hashString(npcRef) % 6;
-      const npcX = 3 * TILE_SIZE;
-      const npcY = 3 * TILE_SIZE;
+      const npcX = 4 * TILE_SIZE;
+      const npcY = 4 * TILE_SIZE;
       this.interiorNpc = new NPC(
         this, npcX, npcY, `npc_${spriteIdx}`, npcRef, displayName,
       );
@@ -172,7 +176,7 @@ export class BuildingScene extends Phaser.Scene {
     const info = generateBuildingInfo(this.componentEntity);
 
     // Title plaque — position on right side to leave room for NPC on left
-    const textStartX = this.ownerEntity ? TILE_SIZE * 5 : TILE_SIZE * 1.5;
+    const textStartX = this.ownerEntity ? TILE_SIZE * 7 : TILE_SIZE * 2;
 
     const name = info[0] ?? this.componentEntity.metadata.name;
     this.add
@@ -206,7 +210,7 @@ export class BuildingScene extends Phaser.Scene {
           color: '#d4c4a0',
           backgroundColor: '#4a3a2a',
           padding: { x: 4, y: 4 },
-          wordWrap: { width: (ROOM_WIDTH - 3) * TILE_SIZE },
+          wordWrap: { width: (ROOM_WIDTH - 5) * TILE_SIZE },
         })
         .setDepth(10);
     }
@@ -227,8 +231,8 @@ export class BuildingScene extends Phaser.Scene {
     // View Details hint
     this.add
       .text(
-        TILE_SIZE * 1.5,
-        TILE_SIZE * (ROOM_HEIGHT - 2.5),
+        TILE_SIZE * 2,
+        TILE_SIZE * (ROOM_HEIGHT - 3),
         'Press Q to view full details',
         {
           fontSize: '10px',
