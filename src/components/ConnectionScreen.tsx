@@ -424,37 +424,36 @@ export function ConnectionScreen() {
           </button>
 
           {/* ── Skip / close / disconnect ── */}
-          <div style={{ textAlign: 'center', marginTop: 4 }}>
-            {backstageConfigured ? (
-              <>
-                <button
-                  type="button"
-                  onClick={closeConfigPanel}
-                  style={S.skipBtn}
-                >
-                  Close
-                </button>
-                <span style={S.footerSep}>·</span>
-                <button
-                  type="button"
-                  onClick={() => { disconnectBackstage(); setUrl(''); setToken(''); setPhase('idle'); }}
-                  style={{ ...S.skipBtn, color: '#f85149' }}
-                >
-                  Disconnect
-                </button>
-              </>
-            ) : (
+          {backstageConfigured ? (
+            <div style={{ textAlign: 'center', marginTop: 4 }}>
               <button
                 type="button"
                 onClick={closeConfigPanel}
                 style={S.skipBtn}
               >
-                Skip — explore with mock data
+                Close
               </button>
-            )}
-            <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>
-              Press <kbd style={S.kbd}>B</kbd> anytime in-game to open this panel
+              <span style={S.footerSep}>·</span>
+              <button
+                type="button"
+                onClick={() => { disconnectBackstage(); setUrl(''); setToken(''); setPhase('idle'); }}
+                style={{ ...S.skipBtn, color: '#f85149' }}
+              >
+                Disconnect
+              </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={closeConfigPanel}
+              style={{ ...S.connectBtn, marginTop: 8 }}
+            >
+              ▶  Explore with Mock Data
+            </button>
+          )}
+
+          <div style={{ textAlign: 'center', fontSize: 10, color: '#484f58', marginTop: 8 }}>
+            Press <kbd style={S.kbd}>B</kbd> anytime in-game to open this panel
           </div>
         </form>
 
