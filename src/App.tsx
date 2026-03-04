@@ -38,6 +38,12 @@ export default function App() {
       <MiniMap />
       <IntroModal />
       {configPanelOpen && <ConnectionScreen />}
+      <span style={{
+        position: 'fixed', bottom: 4, right: 8, fontSize: 10,
+        fontFamily: 'monospace', color: '#484f58', pointerEvents: 'none', zIndex: 1,
+      }}>
+        {__GIT_HASH__}
+      </span>
     </>
   );
 }
