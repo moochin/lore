@@ -61,7 +61,8 @@ export function IntroModal() {
             margin: '0 0 24px',
           }}
         >
-          Explore the villages of four guilds, talk to their members,
+          Six guilds have settled across the realm — from forested highlands
+          to arid deserts. Explore their villages, talk to their members,
           and discover the services they maintain.
         </p>
 

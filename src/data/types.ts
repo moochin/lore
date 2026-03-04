@@ -44,6 +44,7 @@ export interface BuildingState {
   name: string;
   position: { x: number; y: number }; // tile coordinates (top-left of 3x3)
   buildingType: 'component' | 'api';
+  componentType?: string; // e.g. 'service', 'website', 'library' — determines sprite
 }
 
 export interface VillageState {

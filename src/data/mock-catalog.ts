@@ -715,6 +715,321 @@ const reportingApi: Entity = {
 };
 
 // ============================================================
+// SECURITY ORDER
+// ============================================================
+
+export const securityOrder: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Group',
+  metadata: {
+    name: 'security-order',
+    description: 'The Security Order protects the realm from threats, manages vulnerability scanning, and enforces compliance across all services.',
+    tags: ['security', 'compliance', 'scanning'],
+  },
+  spec: {
+    type: 'team',
+    profile: { displayName: 'Security Order' },
+    children: [],
+  },
+  relations: [
+    { type: 'hasMember', targetRef: 'user:default/petra-voss' },
+    { type: 'hasMember', targetRef: 'user:default/quinn-reeves' },
+    { type: 'hasMember', targetRef: 'user:default/raj-sharma' },
+    { type: 'ownerOf', targetRef: 'component:default/vulnerability-scanner' },
+    { type: 'ownerOf', targetRef: 'component:default/secret-vault' },
+    { type: 'ownerOf', targetRef: 'component:default/compliance-engine' },
+    { type: 'ownerOf', targetRef: 'api:default/security-audit-api' },
+  ],
+};
+
+const petraVoss: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'User',
+  metadata: {
+    name: 'petra-voss',
+    description: 'Head of Security. Leads threat modeling, incident response, and security architecture reviews.',
+  },
+  spec: {
+    profile: { displayName: 'Petra Voss', email: 'petra@example.com' },
+    role: 'Head of Security',
+    memberOf: ['security-order'],
+  },
+  relations: [
+    { type: 'memberOf', targetRef: 'group:default/security-order' },
+    { type: 'ownerOf', targetRef: 'component:default/vulnerability-scanner' },
+    { type: 'ownerOf', targetRef: 'api:default/security-audit-api' },
+  ],
+};
+
+const quinnReeves: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'User',
+  metadata: {
+    name: 'quinn-reeves',
+    description: 'Security Engineer specializing in secrets management and cryptographic protocols.',
+  },
+  spec: {
+    profile: { displayName: 'Quinn Reeves', email: 'quinn@example.com' },
+    role: 'Security Engineer',
+    memberOf: ['security-order'],
+  },
+  relations: [
+    { type: 'memberOf', targetRef: 'group:default/security-order' },
+    { type: 'ownerOf', targetRef: 'component:default/secret-vault' },
+  ],
+};
+
+const rajSharma: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'User',
+  metadata: {
+    name: 'raj-sharma',
+    description: 'Compliance Engineer focused on SOC2 auditing, GDPR enforcement, and regulatory reporting.',
+  },
+  spec: {
+    profile: { displayName: 'Raj Sharma', email: 'raj@example.com' },
+    role: 'Compliance Engineer',
+    memberOf: ['security-order'],
+  },
+  relations: [
+    { type: 'memberOf', targetRef: 'group:default/security-order' },
+    { type: 'ownerOf', targetRef: 'component:default/compliance-engine' },
+  ],
+};
+
+const vulnerabilityScanner: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'vulnerability-scanner',
+    description: 'Automated vulnerability scanning service that checks all deployed services for known CVEs and misconfigurations.',
+    tags: ['security', 'scanning', 'python'],
+  },
+  spec: {
+    type: 'service',
+    lifecycle: 'production',
+    owner: 'group:default/security-order',
+    providesApis: ['api:default/security-audit-api'],
+    consumesApis: ['api:default/events-grpc-api'],
+  },
+  relations: [
+    { type: 'ownedBy', targetRef: 'group:default/security-order' },
+    { type: 'providesApi', targetRef: 'api:default/security-audit-api' },
+    { type: 'consumesApi', targetRef: 'api:default/events-grpc-api' },
+  ],
+};
+
+const secretVault: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'secret-vault',
+    description: 'Centralized secrets management service backed by HashiCorp Vault. Handles key rotation and access policies.',
+    tags: ['secrets', 'vault', 'go'],
+  },
+  spec: {
+    type: 'service',
+    lifecycle: 'production',
+    owner: 'group:default/security-order',
+  },
+  relations: [{ type: 'ownedBy', targetRef: 'group:default/security-order' }],
+};
+
+const complianceEngine: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'compliance-engine',
+    description: 'Policy-as-code engine that enforces SOC2, GDPR, and HIPAA compliance rules across the organization.',
+    tags: ['compliance', 'policy', 'rego'],
+  },
+  spec: {
+    type: 'service',
+    lifecycle: 'experimental',
+    owner: 'group:default/security-order',
+  },
+  relations: [{ type: 'ownedBy', targetRef: 'group:default/security-order' }],
+};
+
+const securityAuditApi: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'API',
+  metadata: {
+    name: 'security-audit-api',
+    description: 'API for querying security scan results, compliance status, and audit trails.',
+    tags: ['rest', 'security', 'audit'],
+  },
+  spec: {
+    type: 'openapi',
+    lifecycle: 'production',
+    owner: 'group:default/security-order',
+    definition: 'openapi: 3.0.0',
+  },
+  relations: [
+    { type: 'ownedBy', targetRef: 'group:default/security-order' },
+    { type: 'apiProvidedBy', targetRef: 'component:default/vulnerability-scanner' },
+  ],
+};
+
+// ============================================================
+// SRE WARDENS
+// ============================================================
+
+export const sreWardens: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Group',
+  metadata: {
+    name: 'sre-wardens',
+    description: 'The SRE Wardens keep the realm running. They manage monitoring, incident response, and infrastructure reliability.',
+    tags: ['sre', 'monitoring', 'reliability'],
+  },
+  spec: {
+    type: 'team',
+    profile: { displayName: 'SRE Wardens' },
+    children: [],
+  },
+  relations: [
+    { type: 'hasMember', targetRef: 'user:default/sam-oduya' },
+    { type: 'hasMember', targetRef: 'user:default/tina-mueller' },
+    { type: 'hasMember', targetRef: 'user:default/uri-ben-ari' },
+    { type: 'ownerOf', targetRef: 'component:default/monitoring-stack' },
+    { type: 'ownerOf', targetRef: 'component:default/incident-bot' },
+    { type: 'ownerOf', targetRef: 'component:default/status-page' },
+    { type: 'ownerOf', targetRef: 'api:default/alerting-api' },
+  ],
+};
+
+const samOduya: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'User',
+  metadata: {
+    name: 'sam-oduya',
+    description: 'SRE Lead. Architected the monitoring stack and on-call rotation. Champion of error budgets.',
+  },
+  spec: {
+    profile: { displayName: 'Sam Oduya', email: 'sam@example.com' },
+    role: 'SRE Lead',
+    memberOf: ['sre-wardens'],
+  },
+  relations: [
+    { type: 'memberOf', targetRef: 'group:default/sre-wardens' },
+    { type: 'ownerOf', targetRef: 'component:default/monitoring-stack' },
+    { type: 'ownerOf', targetRef: 'api:default/alerting-api' },
+  ],
+};
+
+const tinaMueller: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'User',
+  metadata: {
+    name: 'tina-mueller',
+    description: 'Incident Response Engineer. Built the incident bot and manages runbooks.',
+  },
+  spec: {
+    profile: { displayName: 'Tina Mueller', email: 'tina@example.com' },
+    role: 'Incident Response Engineer',
+    memberOf: ['sre-wardens'],
+  },
+  relations: [
+    { type: 'memberOf', targetRef: 'group:default/sre-wardens' },
+    { type: 'ownerOf', targetRef: 'component:default/incident-bot' },
+  ],
+};
+
+const uriBenAri: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'User',
+  metadata: {
+    name: 'uri-ben-ari',
+    description: 'Platform Reliability Engineer. Maintains the public status page and uptime dashboards.',
+  },
+  spec: {
+    profile: { displayName: 'Uri Ben-Ari', email: 'uri@example.com' },
+    role: 'Reliability Engineer',
+    memberOf: ['sre-wardens'],
+  },
+  relations: [
+    { type: 'memberOf', targetRef: 'group:default/sre-wardens' },
+    { type: 'ownerOf', targetRef: 'component:default/status-page' },
+  ],
+};
+
+const monitoringStack: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'monitoring-stack',
+    description: 'Full observability stack: Prometheus for metrics, Grafana for dashboards, and Loki for log aggregation.',
+    tags: ['monitoring', 'prometheus', 'grafana'],
+  },
+  spec: {
+    type: 'service',
+    lifecycle: 'production',
+    owner: 'group:default/sre-wardens',
+    providesApis: ['api:default/alerting-api'],
+    consumesApis: ['api:default/events-grpc-api'],
+  },
+  relations: [
+    { type: 'ownedBy', targetRef: 'group:default/sre-wardens' },
+    { type: 'providesApi', targetRef: 'api:default/alerting-api' },
+    { type: 'consumesApi', targetRef: 'api:default/events-grpc-api' },
+  ],
+};
+
+const incidentBot: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'incident-bot',
+    description: 'Slack-integrated incident management bot. Creates war rooms, pages on-call, and tracks incident timelines.',
+    tags: ['incident', 'slack', 'typescript'],
+  },
+  spec: {
+    type: 'service',
+    lifecycle: 'production',
+    owner: 'group:default/sre-wardens',
+  },
+  relations: [{ type: 'ownedBy', targetRef: 'group:default/sre-wardens' }],
+};
+
+const statusPage: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'Component',
+  metadata: {
+    name: 'status-page',
+    description: 'Public-facing status page showing real-time health of all services and historical uptime.',
+    tags: ['status', 'frontend', 'react'],
+  },
+  spec: {
+    type: 'website',
+    lifecycle: 'production',
+    owner: 'group:default/sre-wardens',
+  },
+  relations: [{ type: 'ownedBy', targetRef: 'group:default/sre-wardens' }],
+};
+
+const alertingApi: Entity = {
+  apiVersion: 'backstage.io/v1alpha1',
+  kind: 'API',
+  metadata: {
+    name: 'alerting-api',
+    description: 'API for managing alert rules, notification channels, and incident escalation policies.',
+    tags: ['rest', 'alerting', 'webhook'],
+  },
+  spec: {
+    type: 'openapi',
+    lifecycle: 'production',
+    owner: 'group:default/sre-wardens',
+    definition: 'openapi: 3.0.0',
+  },
+  relations: [
+    { type: 'ownedBy', targetRef: 'group:default/sre-wardens' },
+    { type: 'apiProvidedBy', targetRef: 'component:default/monitoring-stack' },
+    { type: 'apiConsumedBy', targetRef: 'component:default/incident-bot' },
+  ],
+};
+
+// ============================================================
 // CATALOG AGGREGATION
 // ============================================================
 
@@ -727,6 +1042,10 @@ export const mockCatalog: Entity[] = [
   designSystem, webApp, mobileApp, graphqlGateway,
   dataForge, marcoRossi, ninaKowalski, omarHassan,
   analyticsEngine, dataWarehouse, reportingApi,
+  securityOrder, petraVoss, quinnReeves, rajSharma,
+  vulnerabilityScanner, secretVault, complianceEngine, securityAuditApi,
+  sreWardens, samOduya, tinaMueller, uriBenAri,
+  monitoringStack, incidentBot, statusPage, alertingApi,
 ];
 
 // ============================================================

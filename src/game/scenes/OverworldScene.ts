@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { TILE_SIZE } from '../config';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
-import { generateWorld, generateWorldMapData } from '../systems/MapGenerator';
+import { generateWorld, generateWorldMapData, MAP_WIDTH, MAP_HEIGHT, TILE } from '../systems/MapGenerator';
 import { generateNPCDialogue } from '../systems/DialogueSystem';
 import {
   getAllTeams,
@@ -11,8 +11,14 @@ import {
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { WorldState, BuildingState } from '../../data/types';
 
-const MAP_WIDTH = 200;
-const MAP_HEIGHT = 160;
+/** Map a component's spec.type to its sprite key */
+function getBuildingSpriteKey(building: BuildingState): string {
+  if (building.buildingType === 'api') return 'building_api';
+  const ct = building.componentType ?? 'service';
+  if (ct === 'website') return 'building_website';
+  if (ct === 'library') return 'building_library';
+  return 'building_service';
+}
 
 export class OverworldScene extends Phaser.Scene {
   private player!: Player;
@@ -34,6 +40,12 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   create(data?: { fromBuilding?: boolean; buildingRef?: string }) {
+    // Scene transition — fade in
+    this.cameras.main.fadeIn(400, 0, 0, 0);
+
+    // Track scene in store
+    useGameStore.getState().setCurrentScene('OverworldScene');
+
     // Generate world from all teams
     const teams = getAllTeams();
     this.worldState = generateWorld(teams);
@@ -47,18 +59,26 @@ export class OverworldScene extends Phaser.Scene {
       tileHeight: TILE_SIZE,
     });
 
-    const tsGrass = tilemap.addTilesetImage('grass', 'tile_grass', TILE_SIZE, TILE_SIZE, 0, 0, 0)!;
-    const tsPath = tilemap.addTilesetImage('path', 'tile_path', TILE_SIZE, TILE_SIZE, 0, 0, 1)!;
-    const tsWater = tilemap.addTilesetImage('water', 'tile_water', TILE_SIZE, TILE_SIZE, 0, 0, 2)!;
-    const tsWall = tilemap.addTilesetImage('wall', 'tile_wall', TILE_SIZE, TILE_SIZE, 0, 0, 3)!;
-    const tsTree = tilemap.addTilesetImage('tree', 'tile_tree', TILE_SIZE, TILE_SIZE, 0, 0, 4)!;
+    const tsGrass = tilemap.addTilesetImage('grass', 'tile_grass', TILE_SIZE, TILE_SIZE, 0, 0, TILE.GRASS)!;
+    const tsPath = tilemap.addTilesetImage('path', 'tile_path', TILE_SIZE, TILE_SIZE, 0, 0, TILE.PATH)!;
+    const tsWater = tilemap.addTilesetImage('water', 'tile_water', TILE_SIZE, TILE_SIZE, 0, 0, TILE.WATER)!;
+    const tsWall = tilemap.addTilesetImage('wall', 'tile_wall', TILE_SIZE, TILE_SIZE, 0, 0, TILE.WALL)!;
+    const tsTree = tilemap.addTilesetImage('tree', 'tile_tree', TILE_SIZE, TILE_SIZE, 0, 0, TILE.TREE)!;
+    const tsFloor = tilemap.addTilesetImage('floor', 'tile_floor', TILE_SIZE, TILE_SIZE, 0, 0, TILE.FLOOR)!;
+    const tsDoor = tilemap.addTilesetImage('door', 'tile_door', TILE_SIZE, TILE_SIZE, 0, 0, TILE.DOOR)!;
+    const tsRock = tilemap.addTilesetImage('rock', 'tile_rock', TILE_SIZE, TILE_SIZE, 0, 0, TILE.ROCK)!;
+    const tsSwamp = tilemap.addTilesetImage('swamp', 'tile_swamp', TILE_SIZE, TILE_SIZE, 0, 0, TILE.SWAMP)!;
+    const tsSand = tilemap.addTilesetImage('sand', 'tile_sand', TILE_SIZE, TILE_SIZE, 0, 0, TILE.SAND)!;
+    const tsDenseTree = tilemap.addTilesetImage('dense_tree', 'tile_dense_tree', TILE_SIZE, TILE_SIZE, 0, 0, TILE.DENSE_TREE)!;
+    const tsFlower = tilemap.addTilesetImage('flower', 'tile_flower', TILE_SIZE, TILE_SIZE, 0, 0, TILE.FLOWER)!;
 
-    const collisionLayer = tilemap.createLayer(0, [tsGrass, tsPath, tsWater, tsWall, tsTree], 0, 0)!;
-    collisionLayer.setCollision([2, 4]);
+    const allTilesets = [tsGrass, tsPath, tsWater, tsWall, tsTree, tsFloor, tsDoor, tsRock, tsSwamp, tsSand, tsDenseTree, tsFlower];
+    const collisionLayer = tilemap.createLayer(0, allTilesets, 0, 0)!;
+    collisionLayer.setCollision([TILE.WATER, TILE.TREE, TILE.ROCK, TILE.DENSE_TREE]);
 
     // Determine player spawn
-    let spawnX = 100 * TILE_SIZE;
-    let spawnY = 80 * TILE_SIZE;
+    let spawnX = 120 * TILE_SIZE;
+    let spawnY = 100 * TILE_SIZE;
     if (data?.fromBuilding && data.buildingRef) {
       for (const village of this.worldState.villages) {
         const building = village.buildings.find((b) => b.entityRef === data.buildingRef);
@@ -84,7 +104,7 @@ export class OverworldScene extends Phaser.Scene {
       const sprites: Phaser.GameObjects.GameObject[] = [];
 
       // Village name banner
-      const bannerX = (village.worldPosition.x + 20) * TILE_SIZE;
+      const bannerX = (village.worldPosition.x + 22) * TILE_SIZE;
       const bannerY = (village.worldPosition.y + 1) * TILE_SIZE;
       const banner = this.add.text(bannerX, bannerY, village.teamName, {
         fontSize: '14px',
@@ -159,10 +179,11 @@ export class OverworldScene extends Phaser.Scene {
     const bx = building.position.x * TILE_SIZE;
     const by = building.position.y * TILE_SIZE;
 
+    const spriteKey = getBuildingSpriteKey(building);
     const sprite = this.add.image(
       bx + TILE_SIZE * 1.5,
       by + TILE_SIZE * 1.5,
-      'building',
+      spriteKey,
     );
     sprite.setDepth(by + TILE_SIZE * 3);
     placed.push(sprite);
@@ -326,12 +347,12 @@ export class OverworldScene extends Phaser.Scene {
     for (const village of this.worldState.villages) {
       if (store.discoveredVillages.includes(village.teamRef)) continue;
 
-      const vcx = village.worldPosition.x + 20;
-      const vcy = village.worldPosition.y + 15;
+      const vcx = village.worldPosition.x + 22;
+      const vcy = village.worldPosition.y + 18;
       const dx = Math.abs(px - vcx);
       const dy = Math.abs(py - vcy);
 
-      if (dx < 25 && dy < 20) {
+      if (dx < 28 && dy < 22) {
         // Discover this village
         store.discoverVillage(village.teamRef);
 
@@ -393,6 +414,10 @@ export class OverworldScene extends Phaser.Scene {
   private enterBuilding(ref: string) {
     useGameStore.getState().unlockEntity(ref);
     useGameStore.getState().setActiveBuilding(ref);
-    this.scene.start('BuildingScene', { entityRef: ref });
+    // Fade out then start building scene
+    this.cameras.main.fadeOut(300, 0, 0, 0);
+    this.time.delayedCall(300, () => {
+      this.scene.start('BuildingScene', { entityRef: ref });
+    });
   }
 }

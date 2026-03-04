@@ -1,18 +1,9 @@
 import { useGameStore } from '../store/gameStore';
 import { getAllTeams, entityRef } from '../data/mock-catalog';
+import { VILLAGE_POSITIONS, MAP_WIDTH, MAP_HEIGHT } from '../game/systems/MapGenerator';
 
-const MAP_W = 200;
-const MAP_H = 160;
-const MINI_W = 180;
-const MINI_H = 144;
-
-// Village world positions (must match MapGenerator VILLAGE_POSITIONS)
-const VILLAGE_POSITIONS = [
-  { x: 25, y: 20 },
-  { x: 125, y: 18 },
-  { x: 25, y: 100 },
-  { x: 125, y: 102 },
-];
+const MINI_W = 192;
+const MINI_H = 160;
 
 export function MiniMap() {
   const miniMapVisible = useGameStore((s) => s.miniMapVisible);
@@ -24,8 +15,8 @@ export function MiniMap() {
 
   const teams = getAllTeams();
   const tileSize = 16;
-  const scaleX = MINI_W / (MAP_W * tileSize);
-  const scaleY = MINI_H / (MAP_H * tileSize);
+  const scaleX = MINI_W / (MAP_WIDTH * tileSize);
+  const scaleY = MINI_H / (MAP_HEIGHT * tileSize);
   const playerX = playerPosition.x * scaleX;
   const playerY = playerPosition.y * scaleY;
 
@@ -50,8 +41,8 @@ export function MiniMap() {
         const ref = entityRef(team);
         const discovered = discoveredVillages.includes(ref);
         const displayName = (team.spec.profile as { displayName?: string })?.displayName ?? team.metadata.name;
-        const dotX = ((pos.x + 20) * tileSize) * scaleX;
-        const dotY = ((pos.y + 15) * tileSize) * scaleY;
+        const dotX = ((pos.x + 22) * tileSize) * scaleX;
+        const dotY = ((pos.y + 18) * tileSize) * scaleY;
 
         return (
           <div key={ref}>

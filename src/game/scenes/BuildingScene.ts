@@ -48,6 +48,10 @@ export class BuildingScene extends Phaser.Scene {
   }
 
   create(data?: { entityRef?: string }) {
+    // Scene transition — fade in
+    this.cameras.main.fadeIn(400, 0, 0, 0);
+    useGameStore.getState().setCurrentScene('BuildingScene');
+
     this.entityRef = data?.entityRef ?? '';
     this.componentEntity = this.entityRef
       ? getEntityByRef(this.entityRef) ?? null
@@ -321,9 +325,12 @@ export class BuildingScene extends Phaser.Scene {
       this.npcHint.setVisible(false);
 
       if (this.player.interactPressed()) {
-        this.scene.start('OverworldScene', {
-          fromBuilding: true,
-          buildingRef: this.entityRef,
+        this.cameras.main.fadeOut(300, 0, 0, 0);
+        this.time.delayedCall(300, () => {
+          this.scene.start('OverworldScene', {
+            fromBuilding: true,
+            buildingRef: this.entityRef,
+          });
         });
       }
     } else {

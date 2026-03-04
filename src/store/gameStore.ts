@@ -6,6 +6,34 @@ export interface DialogueLine {
   text: string;
 }
 
+const STORAGE_KEY = 'lore-save';
+
+interface SaveData {
+  unlockedEntities: string[];
+  discoveredVillages: string[];
+  introShown: boolean;
+}
+
+function loadSave(): Partial<SaveData> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Partial<SaveData>;
+  } catch {
+    return {};
+  }
+}
+
+function persistSave(data: SaveData) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // localStorage may be unavailable
+  }
+}
+
+const saved = loadSave();
+
 interface GameState {
   // Scene tracking
   currentScene: string;
@@ -87,21 +115,33 @@ export const useGameStore = create<GameState>((set, get) => ({
   showDetailPanel: (entity) => set({ detailPanelEntity: entity }),
   hideDetailPanel: () => set({ detailPanelEntity: null }),
 
-  // Unlock tracking
-  unlockedEntities: [],
+  // Unlock tracking (persisted)
+  unlockedEntities: saved.unlockedEntities ?? [],
   unlockEntity: (ref) => {
     const { unlockedEntities } = get();
     if (!unlockedEntities.includes(ref)) {
-      set({ unlockedEntities: [...unlockedEntities, ref] });
+      const updated = [...unlockedEntities, ref];
+      set({ unlockedEntities: updated });
+      persistSave({
+        unlockedEntities: updated,
+        discoveredVillages: get().discoveredVillages,
+        introShown: get().introShown,
+      });
     }
   },
 
-  // Village discovery
-  discoveredVillages: [],
+  // Village discovery (persisted)
+  discoveredVillages: saved.discoveredVillages ?? [],
   discoverVillage: (ref) => {
     const { discoveredVillages } = get();
     if (!discoveredVillages.includes(ref)) {
-      set({ discoveredVillages: [...discoveredVillages, ref] });
+      const updated = [...discoveredVillages, ref];
+      set({ discoveredVillages: updated });
+      persistSave({
+        unlockedEntities: get().unlockedEntities,
+        discoveredVillages: updated,
+        introShown: get().introShown,
+      });
     }
   },
 
@@ -117,7 +157,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   miniMapVisible: true,
   toggleMiniMap: () => set((s) => ({ miniMapVisible: !s.miniMapVisible })),
 
-  // Intro modal
-  introShown: false,
-  dismissIntro: () => set({ introShown: true }),
+  // Intro modal (persisted)
+  introShown: saved.introShown ?? false,
+  dismissIntro: () => {
+    set({ introShown: true });
+    persistSave({
+      unlockedEntities: get().unlockedEntities,
+      discoveredVillages: get().discoveredVillages,
+      introShown: true,
+    });
+  },
 }));
