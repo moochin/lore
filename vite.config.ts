@@ -21,7 +21,7 @@ function buildCsp(): string {
 
   const connectSrc = backstageOrigin
     ? `'self' ${backstageOrigin}`
-    : `'self' https:`;   // open during local dev; lock down in production
+    : `'self' https: http://localhost:*`;   // open during local dev; lock down in production
 
   return [
     `default-src 'self'`,
