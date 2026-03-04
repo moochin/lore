@@ -14,8 +14,8 @@ import {
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { VillageState, BuildingState } from '../../data/types';
 
-const MAP_WIDTH = 40;
-const MAP_HEIGHT = 30;
+const MAP_WIDTH = 60;
+const MAP_HEIGHT = 45;
 
 export class OverworldScene extends Phaser.Scene {
   private player!: Player;
@@ -56,8 +56,8 @@ export class OverworldScene extends Phaser.Scene {
     const collisionLayer = tilemap.layers[0].tilemapLayer;
 
     // Determine player spawn
-    let spawnX = 20 * TILE_SIZE;
-    let spawnY = 22 * TILE_SIZE;
+    let spawnX = 30 * TILE_SIZE;
+    let spawnY = 35 * TILE_SIZE;
     if (data?.fromBuilding && data.buildingRef) {
       const building = this.villageState.buildings.find(
         (b) => b.entityRef === data.buildingRef,
@@ -89,7 +89,7 @@ export class OverworldScene extends Phaser.Scene {
 
     // Interact hint
     this.interactHint = this.add.text(0, 0, '', {
-      fontSize: '10px',
+      fontSize: '12px',
       color: '#ffffff',
       backgroundColor: '#000000aa',
       padding: { x: 4, y: 2 },
@@ -102,11 +102,11 @@ export class OverworldScene extends Phaser.Scene {
 
     // Village name banner
     const nameText = this.add.text(
-      20 * TILE_SIZE,
+      30 * TILE_SIZE,
       3 * TILE_SIZE,
       this.villageState.teamName,
       {
-        fontSize: '12px',
+        fontSize: '14px',
         color: '#ffe0a0',
         backgroundColor: '#000000aa',
         padding: { x: 6, y: 3 },
@@ -133,10 +133,10 @@ export class OverworldScene extends Phaser.Scene {
       by - 2,
       building.name,
       {
-        fontSize: '7px',
+        fontSize: '10px',
         color: '#ffe0a0',
         backgroundColor: '#000000aa',
-        padding: { x: 2, y: 1 },
+        padding: { x: 4, y: 2 },
       },
     );
     label.setOrigin(0.5, 1);

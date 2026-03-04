@@ -329,3 +329,23 @@ export function getTeamApis(teamEntity: Entity): Entity[] {
 export function entityRef(entity: Entity): string {
   return `${entity.kind.toLowerCase()}:default/${entity.metadata.name}`;
 }
+
+export function getComponentOwner(componentEntity: Entity): Entity | undefined {
+  // Find the first User who owns this component
+  const ownerRef = componentEntity.relations?.find(
+    (r) => r.type === 'ownedBy' && r.targetRef.startsWith('group:'),
+  )?.targetRef;
+  if (!ownerRef) return undefined;
+
+  // Find the group, then find a member who owns this specific component
+  const group = getEntityByRef(ownerRef);
+  if (!group) return undefined;
+
+  const componentRef = entityRef(componentEntity);
+  const members = getTeamMembers(group);
+  return members.find((m) =>
+    m.relations?.some(
+      (r) => r.type === 'ownerOf' && r.targetRef === componentRef,
+    ),
+  ) ?? members[0]; // fallback to first member
+}

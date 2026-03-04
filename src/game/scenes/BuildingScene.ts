@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config';
 import { Player } from '../entities/Player';
-import { getEntityByRef } from '../../data/mock-catalog';
-import { generateBuildingInfo } from '../systems/DialogueSystem';
-import { useGameStore } from '../../store/gameStore';
+import { NPC } from '../entities/NPC';
+import { getEntityByRef, getComponentOwner, entityRef as makeEntityRef } from '../../data/mock-catalog';
+import { generateBuildingInfo, generateBuildingNPCDialogue } from '../systems/DialogueSystem';
+import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { Entity } from '../../data/types';
 
 const ROOM_WIDTH = 12;
@@ -31,11 +32,16 @@ function generateBuildingMap(): number[][] {
 
 export class BuildingScene extends Phaser.Scene {
   private player!: Player;
+  private interiorNpc: NPC | null = null;
   private nearExit = false;
+  private nearNpc = false;
   private exitHint!: Phaser.GameObjects.Text;
+  private npcHint!: Phaser.GameObjects.Text;
   private entityRef = '';
   private componentEntity: Entity | null = null;
+  private ownerEntity: Entity | null = null;
   private qKey!: Phaser.Input.Keyboard.Key;
+  private dialogueJustEnded = false;
 
   constructor() {
     super({ key: 'BuildingScene' });
@@ -45,6 +51,11 @@ export class BuildingScene extends Phaser.Scene {
     this.entityRef = data?.entityRef ?? '';
     this.componentEntity = this.entityRef
       ? getEntityByRef(this.entityRef) ?? null
+      : null;
+
+    // Find the owner of this component to place as interior NPC
+    this.ownerEntity = this.componentEntity
+      ? getComponentOwner(this.componentEntity) ?? null
       : null;
 
     const mapData = generateBuildingMap();
@@ -80,6 +91,38 @@ export class BuildingScene extends Phaser.Scene {
       this.nearExit = true;
     });
 
+    // Place interior NPC if we have an owner
+    this.interiorNpc = null;
+    if (this.ownerEntity) {
+      const npcRef = makeEntityRef(this.ownerEntity);
+      const displayName =
+        (this.ownerEntity.spec.profile as { displayName?: string })?.displayName ??
+        this.ownerEntity.metadata.name;
+      // Determine sprite index from owner name hash
+      const spriteIdx = hashString(npcRef) % 6;
+      const npcX = 3 * TILE_SIZE;
+      const npcY = 3 * TILE_SIZE;
+      this.interiorNpc = new NPC(
+        this, npcX, npcY, `npc_${spriteIdx}`, npcRef, displayName,
+      );
+      this.physics.add.collider(this.player.sprite, this.interiorNpc.sprite);
+
+      // NPC interaction zone
+      const npcZone = this.add.zone(npcX, npcY, TILE_SIZE * 2.5, TILE_SIZE * 2.5);
+      this.physics.add.existing(npcZone, true);
+      this.physics.add.overlap(this.player.sprite, npcZone, () => {
+        this.nearNpc = true;
+      });
+
+      // NPC name label
+      this.add.text(npcX, npcY - 12, displayName, {
+        fontSize: '8px',
+        color: '#ffe0a0',
+        backgroundColor: '#000000aa',
+        padding: { x: 2, y: 1 },
+      }).setOrigin(0.5, 1).setDepth(1000);
+    }
+
     // Camera
     this.cameras.main.centerOn(
       (ROOM_WIDTH * TILE_SIZE) / 2,
@@ -88,13 +131,23 @@ export class BuildingScene extends Phaser.Scene {
 
     // Exit hint
     this.exitHint = this.add.text(0, 0, 'Press E to exit', {
-      fontSize: '10px',
+      fontSize: '12px',
       color: '#ffffff',
       backgroundColor: '#000000aa',
       padding: { x: 4, y: 2 },
     });
     this.exitHint.setDepth(1000);
     this.exitHint.setVisible(false);
+
+    // NPC hint
+    this.npcHint = this.add.text(0, 0, 'Press E to talk', {
+      fontSize: '12px',
+      color: '#ffffff',
+      backgroundColor: '#000000aa',
+      padding: { x: 4, y: 2 },
+    });
+    this.npcHint.setDepth(1000);
+    this.npcHint.setVisible(false);
 
     // Q key for detail panel
     this.qKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
@@ -107,7 +160,7 @@ export class BuildingScene extends Phaser.Scene {
     if (!this.componentEntity) {
       this.add
         .text(TILE_SIZE * 2, TILE_SIZE * 1.5, 'An empty room.', {
-          fontSize: '8px',
+          fontSize: '10px',
           color: '#ffe0a0',
           backgroundColor: '#5a4a3a',
           padding: { x: 4, y: 4 },
@@ -118,11 +171,13 @@ export class BuildingScene extends Phaser.Scene {
 
     const info = generateBuildingInfo(this.componentEntity);
 
-    // Title plaque
+    // Title plaque — position on right side to leave room for NPC on left
+    const textStartX = this.ownerEntity ? TILE_SIZE * 5 : TILE_SIZE * 1.5;
+
     const name = info[0] ?? this.componentEntity.metadata.name;
     this.add
-      .text(TILE_SIZE * 1.5, TILE_SIZE * 1.2, name, {
-        fontSize: '9px',
+      .text(textStartX, TILE_SIZE * 1.2, name, {
+        fontSize: '12px',
         fontStyle: 'bold',
         color: '#ffe0a0',
         backgroundColor: '#5a4a3a',
@@ -133,8 +188,8 @@ export class BuildingScene extends Phaser.Scene {
     // Type + lifecycle line
     if (info[1]) {
       this.add
-        .text(TILE_SIZE * 1.5, TILE_SIZE * 2.2, info[1], {
-          fontSize: '7px',
+        .text(textStartX, TILE_SIZE * 2.4, info[1], {
+          fontSize: '10px',
           color: '#aaccff',
           backgroundColor: '#3a3a5a',
           padding: { x: 4, y: 2 },
@@ -146,8 +201,8 @@ export class BuildingScene extends Phaser.Scene {
     const descLines = info.slice(3).filter((l) => l.length > 0);
     if (descLines.length > 0) {
       this.add
-        .text(TILE_SIZE * 1.5, TILE_SIZE * 3.2, descLines.join('\n'), {
-          fontSize: '7px',
+        .text(textStartX, TILE_SIZE * 3.6, descLines.join('\n'), {
+          fontSize: '10px',
           color: '#d4c4a0',
           backgroundColor: '#4a3a2a',
           padding: { x: 4, y: 4 },
@@ -161,10 +216,10 @@ export class BuildingScene extends Phaser.Scene {
     if (tags.length > 0) {
       this.add
         .text(
-          TILE_SIZE * 7,
-          TILE_SIZE * 1.2,
+          textStartX,
+          TILE_SIZE * (ROOM_HEIGHT - 4),
           tags.map((t) => `[${t}]`).join(' '),
-          { fontSize: '6px', color: '#88cc88' },
+          { fontSize: '9px', color: '#88cc88' },
         )
         .setDepth(10);
     }
@@ -173,10 +228,10 @@ export class BuildingScene extends Phaser.Scene {
     this.add
       .text(
         TILE_SIZE * 1.5,
-        TILE_SIZE * (ROOM_HEIGHT - 3),
+        TILE_SIZE * (ROOM_HEIGHT - 2.5),
         'Press Q to view full details',
         {
-          fontSize: '7px',
+          fontSize: '10px',
           color: '#aaaaff',
           backgroundColor: '#2a2a4a',
           padding: { x: 4, y: 2 },
@@ -186,7 +241,38 @@ export class BuildingScene extends Phaser.Scene {
   }
 
   update() {
+    const store = useGameStore.getState();
+
+    // Dialogue active — freeze and handle E to advance
+    if (store.dialogueActive) {
+      this.player.sprite.setVelocity(0, 0);
+      this.exitHint.setVisible(false);
+      this.npcHint.setVisible(false);
+
+      if (this.player.interactPressed()) {
+        store.advanceDialogue();
+        if (!useGameStore.getState().dialogueActive) {
+          this.dialogueJustEnded = true;
+          const ref = store.dialogueEntityRef;
+          if (ref) {
+            const entity = getEntityByRef(ref);
+            if (entity) {
+              useGameStore.getState().showDetailPanel(entity);
+            }
+          }
+        }
+      }
+
+      this.nearExit = false;
+      this.nearNpc = false;
+      return;
+    }
+
     this.player.update();
+
+    if (this.interiorNpc) {
+      this.interiorNpc.update(0);
+    }
 
     // Q key to show detail panel
     if (
@@ -197,17 +283,33 @@ export class BuildingScene extends Phaser.Scene {
     }
 
     // Detail panel open — freeze
-    if (useGameStore.getState().detailPanelEntity) {
+    if (store.detailPanelEntity) {
       this.player.sprite.setVelocity(0, 0);
+      if (this.dialogueJustEnded) {
+        this.dialogueJustEnded = false;
+      }
       return;
     }
 
-    if (this.nearExit) {
+    // NPC interaction takes priority over exit
+    if (this.nearNpc && this.interiorNpc) {
+      this.npcHint.setPosition(
+        this.player.sprite.x - 30,
+        this.player.sprite.y - 20,
+      );
+      this.npcHint.setVisible(true);
+      this.exitHint.setVisible(false);
+
+      if (this.player.interactPressed()) {
+        this.startInteriorNPCDialogue();
+      }
+    } else if (this.nearExit) {
       this.exitHint.setPosition(
         this.player.sprite.x - 30,
         this.player.sprite.y - 20,
       );
       this.exitHint.setVisible(true);
+      this.npcHint.setVisible(false);
 
       if (this.player.interactPressed()) {
         this.scene.start('OverworldScene', {
@@ -217,8 +319,41 @@ export class BuildingScene extends Phaser.Scene {
       }
     } else {
       this.exitHint.setVisible(false);
+      this.npcHint.setVisible(false);
     }
 
     this.nearExit = false;
+    this.nearNpc = false;
   }
+
+  private startInteriorNPCDialogue() {
+    if (!this.ownerEntity || !this.componentEntity) return;
+
+    const displayName =
+      (this.ownerEntity.spec.profile as { displayName?: string })?.displayName ??
+      this.ownerEntity.metadata.name;
+    const role = (this.ownerEntity.spec.role as string) ?? 'Villager';
+    const ref = makeEntityRef(this.ownerEntity);
+
+    const rawLines = generateBuildingNPCDialogue(this.ownerEntity, this.componentEntity);
+    const dialogueLines: DialogueLine[] = rawLines.map((text) => ({
+      speaker: `${displayName} — ${role}`,
+      text,
+    }));
+
+    useGameStore.getState().startDialogue(dialogueLines, ref);
+    useGameStore.getState().unlockEntity(ref);
+
+    if (this.interiorNpc) {
+      this.interiorNpc.facePlayer(this.player.sprite.x, this.player.sprite.y);
+    }
+  }
+}
+
+function hashString(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
 }

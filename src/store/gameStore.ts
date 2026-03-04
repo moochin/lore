@@ -32,6 +32,10 @@ interface GameState {
   // Active building (for BuildingScene)
   activeBuilding: string | null;
   setActiveBuilding: (ref: string | null) => void;
+
+  // Intro modal
+  introShown: boolean;
+  dismissIntro: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -83,4 +87,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Active building
   activeBuilding: null,
   setActiveBuilding: (ref) => set({ activeBuilding: ref }),
+
+  // Intro modal
+  introShown: false,
+  dismissIntro: () => set({ introShown: true }),
 }));

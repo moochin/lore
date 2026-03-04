@@ -6,26 +6,26 @@ import {
 } from '../../data/types';
 import { entityRef } from '../../data/mock-catalog';
 
-const VILLAGE_CENTER_Y = 14;
+const VILLAGE_CENTER_Y = 22;
 
 // Building placement positions (tile coords for top-left of 3x3 building)
-// Arranged in a semicircle around the village center
+// Spread across the 60x45 map for more adventuring between them
 const BUILDING_SLOTS: { x: number; y: number }[] = [
-  { x: 10, y: 6 },
-  { x: 18, y: 4 },
-  { x: 26, y: 6 },
-  { x: 8, y: 14 },
-  { x: 28, y: 14 },
-  { x: 14, y: 20 },
+  { x: 8,  y: 6 },   // auth-service — top-left
+  { x: 28, y: 5 },   // user-api — top-center
+  { x: 50, y: 7 },   // dashboard-ui — top-right
+  { x: 6,  y: 26 },  // data-pipeline — mid-left
+  { x: 48, y: 28 },  // user-rest-api — mid-right
+  { x: 28, y: 36 },  // events-grpc-api — bottom-center
 ];
 
-// NPC placement positions (near corresponding buildings or along paths)
+// NPC placement positions (near corresponding buildings)
 const NPC_SLOTS: { x: number; y: number }[] = [
-  { x: 14, y: 9 },
-  { x: 22, y: 7 },
-  { x: 30, y: 9 },
-  { x: 12, y: 17 },
-  { x: 32, y: 17 },
+  { x: 13, y: 9 },   // near auth-service
+  { x: 33, y: 8 },   // near user-api
+  { x: 47, y: 11 },  // near dashboard-ui
+  { x: 11, y: 30 },  // near data-pipeline
+  { x: 45, y: 32 },  // near user-rest-api
 ];
 
 export function generateVillage(
@@ -141,15 +141,18 @@ export function generateOverworldMapData(
     }
   }
 
-  // Scatter some decorative trees (avoiding buildings, npcs, and paths)
+  // Scatter decorative trees across the larger map
   const treePositions = [
-    { x: 4, y: 4 }, { x: 5, y: 4 },
-    { x: 35, y: 4 }, { x: 36, y: 4 },
-    { x: 4, y: 24 }, { x: 5, y: 24 },
-    { x: 35, y: 24 }, { x: 36, y: 24 },
-    { x: 16, y: 10 }, { x: 24, y: 10 },
-    { x: 6, y: 18 }, { x: 34, y: 18 },
-    { x: 20, y: 22 }, { x: 22, y: 22 },
+    { x: 4, y: 4 }, { x: 5, y: 4 }, { x: 20, y: 4 }, { x: 21, y: 4 },
+    { x: 40, y: 4 }, { x: 41, y: 4 }, { x: 55, y: 4 }, { x: 56, y: 4 },
+    { x: 4, y: 14 }, { x: 5, y: 14 }, { x: 18, y: 15 }, { x: 38, y: 14 },
+    { x: 55, y: 16 }, { x: 56, y: 16 },
+    { x: 20, y: 18 }, { x: 42, y: 18 },
+    { x: 4, y: 34 }, { x: 5, y: 34 }, { x: 22, y: 32 },
+    { x: 38, y: 34 }, { x: 55, y: 36 }, { x: 56, y: 36 },
+    { x: 4, y: 40 }, { x: 5, y: 40 }, { x: 20, y: 40 },
+    { x: 40, y: 40 }, { x: 55, y: 40 }, { x: 56, y: 40 },
+    { x: 16, y: 20 }, { x: 44, y: 20 },
   ];
 
   for (const pos of treePositions) {

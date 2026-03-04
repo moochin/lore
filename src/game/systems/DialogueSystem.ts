@@ -112,6 +112,54 @@ export function generateBuildingInfo(entity: Entity): string[] {
   return lines;
 }
 
+/**
+ * Generates dialogue for an NPC inside a building, focused on the component they work on.
+ */
+export function generateBuildingNPCDialogue(npcEntity: Entity, componentEntity: Entity): string[] {
+  const displayName =
+    (npcEntity.spec.profile as { displayName?: string })?.displayName ??
+    npcEntity.metadata.name;
+  const compName = componentEntity.metadata.name;
+  const description = componentEntity.metadata.description ?? '';
+  const lifecycle = (componentEntity.spec.lifecycle as string) ?? 'active';
+  const type = (componentEntity.spec.type as string) ?? 'service';
+
+  const lines: string[] = [];
+
+  // Greeting — building-specific
+  const greetings = [
+    `Welcome to the ${compName} workshop! I'm ${displayName}, and I look after things here.`,
+    `Ah, a visitor! I'm ${displayName}. This is where the ${compName} is maintained.`,
+    `You've found the ${compName} quarters. I'm ${displayName} — let me tell you about this place.`,
+  ];
+  lines.push(greetings[hashString(displayName + compName) % greetings.length]);
+
+  // Component description
+  if (description) {
+    lines.push(rpgFlavor(description));
+  }
+
+  // Type and lifecycle flavor
+  const lifecycleText =
+    lifecycle === 'production'
+      ? 'It has proven itself in many battles — stable and trusted.'
+      : lifecycle === 'experimental'
+        ? 'It\'s still young — we\'re forging it in the fires of experimentation.'
+        : 'We\'re actively shaping it into something greater.';
+  lines.push(`This ${type} is ${lifecycle}. ${lifecycleText}`);
+
+  // Tags
+  const tags = componentEntity.metadata.tags ?? [];
+  if (tags.length > 0) {
+    lines.push(`We work with the arts of ${tags.join(', ')} here.`);
+  }
+
+  // Closing
+  lines.push('Feel free to look around, and press Q if you want the full details!');
+
+  return lines;
+}
+
 function rpgFlavor(text: string): string {
   return text
     .replace(/builds and maintains/gi, 'forges and guards')
