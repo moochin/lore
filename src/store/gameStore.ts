@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Entity } from '../data/types';
+import { loadBaseUrl, hasLiveToken, clearCredentials } from '../services/tokenStore';
 
 export interface DialogueLine {
   speaker: string;
@@ -76,6 +77,12 @@ interface GameState {
   // Intro modal
   introShown: boolean;
   dismissIntro: () => void;
+
+  // Backstage connection
+  backstageConfigured: boolean;
+  backstageBaseUrl: string | null;
+  setBackstageConnected: (baseUrl: string) => void;
+  disconnectBackstage: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -166,5 +173,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       discoveredVillages: get().discoveredVillages,
       introShown: true,
     });
+  },
+
+  // Backstage connection — URL is plaintext in localStorage; token is encrypted separately
+  backstageConfigured: hasLiveToken(),
+  backstageBaseUrl: loadBaseUrl(),
+  setBackstageConnected: (baseUrl) => set({ backstageConfigured: true, backstageBaseUrl: baseUrl }),
+  disconnectBackstage: () => {
+    clearCredentials();
+    set({ backstageConfigured: false, backstageBaseUrl: null });
   },
 }));
