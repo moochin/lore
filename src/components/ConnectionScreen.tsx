@@ -267,6 +267,25 @@ export function ConnectionScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [closeConfigPanel]);
 
+  // Handle WASD typing in inputs (Phaser normally consumes these keys)
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    onChangeHandler: (e: React.ChangeEvent<HTMLInputElement>) => void,
+  ) => {
+    const key = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd'].includes(key)) {
+      e.preventDefault();
+      const input = e.currentTarget;
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const newValue = input.value.substring(0, start) + key + input.value.substring(end);
+      input.value = newValue;
+      input.selectionStart = input.selectionEnd = start + 1;
+      // Trigger onChange manually
+      onChangeHandler({ target: input } as React.ChangeEvent<HTMLInputElement>);
+    }
+  };
+
   // Auto-focus the token field when re-entering (URL already saved)
   useEffect(() => {
     if (isReEntry) setTokenFocused(true);
@@ -344,6 +363,7 @@ export function ConnectionScreen() {
                 placeholder="https://backstage.example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, (e) => setUrl(e.target.value))}
                 onFocus={() => setUrlFocused(true)}
                 onBlur={() => setUrlFocused(false)}
                 style={{ ...S.input, ...(urlFocused ? S.inputFocused : {}) }}
@@ -374,6 +394,7 @@ export function ConnectionScreen() {
               placeholder="••••••••••••••••••••••••"
               value={token}
               onChange={(e) => setToken(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, (e) => setToken(e.target.value))}
               onFocus={() => setTokenFocused(true)}
               onBlur={() => setTokenFocused(false)}
               style={{ ...S.input, paddingRight: 36, ...(tokenFocused ? S.inputFocused : {}) }}
