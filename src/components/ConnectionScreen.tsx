@@ -213,6 +213,28 @@ const S = {
     whiteSpace: 'pre' as const,
     overflowX: 'auto' as const,
   },
+  skipBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#8b949e',
+    fontSize: 12,
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    textDecoration: 'underline',
+    textUnderlineOffset: 3,
+  },
+  kbd: {
+    display: 'inline-block',
+    background: '#21262d',
+    border: '1px solid #30363d',
+    borderRadius: 3,
+    padding: '0 5px',
+    fontSize: 10,
+    fontFamily: 'inherit',
+    color: '#c9d1d9',
+    lineHeight: '18px',
+  },
 };
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -221,6 +243,9 @@ type Phase = 'idle' | 'testing' | 'success' | 'error';
 
 export function ConnectionScreen() {
   const setBackstageConnected = useGameStore((s) => s.setBackstageConnected);
+  const closeConfigPanel      = useGameStore((s) => s.closeConfigPanel);
+  const backstageConfigured   = useGameStore((s) => s.backstageConfigured);
+  const disconnectBackstage   = useGameStore((s) => s.disconnectBackstage);
 
   const [url,           setUrl]           = useState(loadBaseUrl() ?? '');
   const [token,         setToken]         = useState('');
@@ -232,6 +257,15 @@ export function ConnectionScreen() {
   const [tokenFocused,  setTokenFocused]  = useState(false);
 
   const isReEntry = needsTokenReEntry();
+
+  // Close on Escape key
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeConfigPanel();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [closeConfigPanel]);
 
   // Auto-focus the token field when re-entering (URL already saved)
   useEffect(() => {
@@ -388,6 +422,40 @@ export function ConnectionScreen() {
              phase === 'success' ? '✅  Connected! Entering the realm…' :
              '▶  Enter the Realm'}
           </button>
+
+          {/* ── Skip / close / disconnect ── */}
+          <div style={{ textAlign: 'center', marginTop: 4 }}>
+            {backstageConfigured ? (
+              <>
+                <button
+                  type="button"
+                  onClick={closeConfigPanel}
+                  style={S.skipBtn}
+                >
+                  Close
+                </button>
+                <span style={S.footerSep}>·</span>
+                <button
+                  type="button"
+                  onClick={() => { disconnectBackstage(); setUrl(''); setToken(''); setPhase('idle'); }}
+                  style={{ ...S.skipBtn, color: '#f85149' }}
+                >
+                  Disconnect
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={closeConfigPanel}
+                style={S.skipBtn}
+              >
+                Skip — explore with mock data
+              </button>
+            )}
+            <div style={{ fontSize: 10, color: '#484f58', marginTop: 6 }}>
+              Press <kbd style={S.kbd}>B</kbd> anytime in-game to open this panel
+            </div>
+          </div>
         </form>
 
         {/* ── Footer ── */}

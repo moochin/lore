@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useGameStore } from './store/gameStore';
 import { ConnectionScreen } from './components/ConnectionScreen';
 import { GameContainer } from './components/GameContainer';
@@ -7,11 +8,27 @@ import { IntroModal } from './components/IntroModal';
 import { MiniMap } from './components/MiniMap';
 
 export default function App() {
-  const configured = useGameStore((s) => s.backstageConfigured);
+  const configPanelOpen  = useGameStore((s) => s.configPanelOpen);
+  const openConfigPanel  = useGameStore((s) => s.openConfigPanel);
+  const closeConfigPanel = useGameStore((s) => s.closeConfigPanel);
+  const dialogueActive   = useGameStore((s) => s.dialogueActive);
 
-  if (!configured) {
-    return <ConnectionScreen />;
-  }
+  // B key toggles the Backstage config panel (ignored during dialogue)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'b' || e.key === 'B') {
+        // Ignore when typing in an input/textarea
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        if (dialogueActive) return;
+
+        if (configPanelOpen) closeConfigPanel();
+        else openConfigPanel();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [configPanelOpen, openConfigPanel, closeConfigPanel, dialogueActive]);
 
   return (
     <>
@@ -20,6 +37,7 @@ export default function App() {
       <DetailPanel />
       <MiniMap />
       <IntroModal />
+      {configPanelOpen && <ConnectionScreen />}
     </>
   );
 }
