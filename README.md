@@ -1,6 +1,6 @@
 # ⚔️ LORE
 
-### *Logically Orchestrated RPG Environment*
+### *logically-orchestrated-rpg-environment*
 
 > **Your software catalog has a story to tell. LORE lets you live it.**
 
