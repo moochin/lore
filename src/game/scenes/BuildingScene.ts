@@ -66,12 +66,12 @@ export class BuildingScene extends Phaser.Scene {
       tileHeight: TILE_SIZE,
     });
 
-    tilemap.addTilesetImage('0', 'tile_wall', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('1', 'tile_floor', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('2', 'tile_door', TILE_SIZE, TILE_SIZE);
+    const tsWall = tilemap.addTilesetImage('wall', 'tile_wall', TILE_SIZE, TILE_SIZE, 0, 0, 0)!;
+    const tsFloor = tilemap.addTilesetImage('floor', 'tile_floor', TILE_SIZE, TILE_SIZE, 0, 0, 1)!;
+    const tsDoor = tilemap.addTilesetImage('door', 'tile_door', TILE_SIZE, TILE_SIZE, 0, 0, 2)!;
 
-    tilemap.setCollision([0]);
-    const collisionLayer = tilemap.layers[0].tilemapLayer;
+    const collisionLayer = tilemap.createLayer(0, [tsWall, tsFloor, tsDoor], 0, 0)!;
+    collisionLayer.setCollision([0]);
 
     // Player near the door
     const spawnX = 5.5 * TILE_SIZE;

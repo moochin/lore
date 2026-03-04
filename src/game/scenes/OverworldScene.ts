@@ -46,14 +46,14 @@ export class OverworldScene extends Phaser.Scene {
       tileHeight: TILE_SIZE,
     });
 
-    tilemap.addTilesetImage('0', 'tile_grass', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('1', 'tile_path', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('2', 'tile_water', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('3', 'tile_wall', TILE_SIZE, TILE_SIZE);
-    tilemap.addTilesetImage('4', 'tile_tree', TILE_SIZE, TILE_SIZE);
+    const tsGrass = tilemap.addTilesetImage('grass', 'tile_grass', TILE_SIZE, TILE_SIZE, 0, 0, 0)!;
+    const tsPath = tilemap.addTilesetImage('path', 'tile_path', TILE_SIZE, TILE_SIZE, 0, 0, 1)!;
+    const tsWater = tilemap.addTilesetImage('water', 'tile_water', TILE_SIZE, TILE_SIZE, 0, 0, 2)!;
+    const tsWall = tilemap.addTilesetImage('wall', 'tile_wall', TILE_SIZE, TILE_SIZE, 0, 0, 3)!;
+    const tsTree = tilemap.addTilesetImage('tree', 'tile_tree', TILE_SIZE, TILE_SIZE, 0, 0, 4)!;
 
-    tilemap.setCollision([2, 4]);
-    const collisionLayer = tilemap.layers[0].tilemapLayer;
+    const collisionLayer = tilemap.createLayer(0, [tsGrass, tsPath, tsWater, tsWall, tsTree], 0, 0)!;
+    collisionLayer.setCollision([2, 4]);
 
     // Determine player spawn
     let spawnX = 30 * TILE_SIZE;
