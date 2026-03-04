@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { saveCredentials, loadBaseUrl, needsTokenReEntry } from '../services/tokenStore';
 import { CatalogClient } from '../services/catalog';
 
-const REPO_URL = import.meta.env.VITE_REPO_URL ?? 'https://github.com/your-org/lore';
+const REPO_URL = import.meta.env.VITE_REPO_URL ?? 'https://github.com/moochin/lore';
 
 // ── Styles ─────────────────────────────────────────────────────────────────
 
