@@ -22,6 +22,7 @@ interface CatalogResponse {
 export class CatalogClient {
   private readonly base: string;
   private readonly token: string;
+  private guestToken: string | null = null;
 
   constructor(config: BackstageConfig) {
     this.base  = config.baseUrl.replace(/\/+$/, ''); // strip trailing slash
@@ -32,11 +33,13 @@ export class CatalogClient {
 
   private async get<T>(path: string): Promise<T> {
     const url = `${this.base}/api/catalog/${path.replace(/^\//, '')}`;
+    // Use guest token if available, otherwise use configured token
+    const authToken = this.guestToken || this.token;
 
     const res = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${this.token}`,
+        Authorization: `Bearer ${authToken}`,
         Accept: 'application/json',
       },
     });
@@ -111,7 +114,7 @@ export class CatalogClient {
       if (!this.token || this.token.length === 0) {
         const guestToken = await this.tryGetGuestToken();
         if (guestToken) {
-          this.token = guestToken;
+          this.guestToken = guestToken;
         }
       }
 
