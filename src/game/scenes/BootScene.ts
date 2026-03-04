@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config';
 
-/**
- * BootScene generates all pixel art assets programmatically at startup.
- * This means zero external asset dependencies for M1.
- */
+const NPC_PALETTES = [
+  { body: '#aa3355', hair: '#2b1a0e', skin: '#f0c8a0' },
+  { body: '#33aa55', hair: '#d4a017', skin: '#e8b88a' },
+  { body: '#5533aa', hair: '#8b0000', skin: '#f0c8a0' },
+  { body: '#aa8833', hair: '#1a1a1a', skin: '#c8a070' },
+  { body: '#338888', hair: '#704214', skin: '#f0c8a0' },
+  { body: '#884433', hair: '#d4d4d4', skin: '#e8b88a' },
+];
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
@@ -14,6 +19,7 @@ export class BootScene extends Phaser.Scene {
     this.generateTileset();
     this.generatePlayerSprite();
     this.generateBuildingSprite();
+    this.generateNPCSprites();
     this.scene.start('OverworldScene');
   }
 
@@ -25,7 +31,6 @@ export class BootScene extends Phaser.Scene {
     const gctx = grass.getContext();
     gctx.fillStyle = '#4a8c3f';
     gctx.fillRect(0, 0, T, T);
-    // Add some texture dots
     gctx.fillStyle = '#5a9c4f';
     for (let i = 0; i < 6; i++) {
       const x = Math.floor(Math.random() * T);
@@ -57,7 +62,7 @@ export class BootScene extends Phaser.Scene {
     wctx.fillRect(10, 10, 3, 1);
     water.refresh();
 
-    // Wall tile (index 3) - for building exteriors and barriers
+    // Wall tile (index 3)
     const wall = this.textures.createCanvas('tile_wall', T, T)!;
     const wallCtx = wall.getContext();
     wallCtx.fillStyle = '#8b7355';
@@ -72,20 +77,17 @@ export class BootScene extends Phaser.Scene {
     // Tree tile (index 4)
     const tree = this.textures.createCanvas('tile_tree', T, T)!;
     const tctx = tree.getContext();
-    // Ground below
     tctx.fillStyle = '#4a8c3f';
     tctx.fillRect(0, 0, T, T);
-    // Trunk
     tctx.fillStyle = '#8b6b3e';
     tctx.fillRect(6, 10, 4, 6);
-    // Canopy
     tctx.fillStyle = '#2d6b2e';
     tctx.fillRect(3, 2, 10, 9);
     tctx.fillStyle = '#3a7d3b';
     tctx.fillRect(4, 3, 8, 7);
     tree.refresh();
 
-    // Floor tile (index 5) - building interior
+    // Floor tile (index 5)
     const floor = this.textures.createCanvas('tile_floor', T, T)!;
     const fctx = floor.getContext();
     fctx.fillStyle = '#a08060';
@@ -104,7 +106,6 @@ export class BootScene extends Phaser.Scene {
     dctx.fillRect(3, 2, 10, 14);
     dctx.fillStyle = '#8b5a2b';
     dctx.fillRect(4, 3, 8, 12);
-    // Doorknob
     dctx.fillStyle = '#daa520';
     dctx.fillRect(10, 9, 2, 2);
     door.refresh();
@@ -113,9 +114,8 @@ export class BootScene extends Phaser.Scene {
   private generatePlayerSprite() {
     const T = TILE_SIZE;
     const directions = ['down', 'left', 'right', 'up'];
-    const frameCount = 3; // idle, walk1, walk2
+    const frameCount = 3;
 
-    // Create a spritesheet canvas: 3 frames wide, 4 directions tall
     const sw = T * frameCount;
     const sh = T * directions.length;
     const canvas = this.textures.createCanvas('player', sw, sh)!;
@@ -125,16 +125,40 @@ export class BootScene extends Phaser.Scene {
       for (let frame = 0; frame < frameCount; frame++) {
         const ox = frame * T;
         const oy = row * T;
-        this.drawCharacter(ctx, ox, oy, dir, frame);
+        this.drawCharacter(ctx, ox, oy, dir, frame, '#3355aa', '#8b4513', '#f0c8a0');
       }
     });
 
     canvas.refresh();
 
-    // Create animation frames
     directions.forEach((_dir, row) => {
       for (let i = 0; i < frameCount; i++) {
         this.textures.get('player').add(row * frameCount + i, 0, i * T, row * T, T, T);
+      }
+    });
+  }
+
+  private generateNPCSprites() {
+    const T = TILE_SIZE;
+    const directions = ['down', 'left', 'right', 'up'];
+
+    NPC_PALETTES.forEach((palette, index) => {
+      const key = `npc_${index}`;
+      // NPC sprites: 1 frame per direction (static, no walk cycle)
+      const sw = T * directions.length;
+      const sh = T;
+      const canvas = this.textures.createCanvas(key, sw, sh)!;
+      const ctx = canvas.getContext();
+
+      directions.forEach((dir, col) => {
+        this.drawCharacter(ctx, col * T, 0, dir, 0, palette.body, palette.hair, palette.skin);
+      });
+
+      canvas.refresh();
+
+      // Register frames: one per direction
+      for (let i = 0; i < directions.length; i++) {
+        this.textures.get(key).add(i, 0, i * T, 0, T, T);
       }
     });
   }
@@ -145,19 +169,22 @@ export class BootScene extends Phaser.Scene {
     oy: number,
     direction: string,
     frame: number,
+    bodyColor: string,
+    hairColor: string,
+    skinColor: string,
   ) {
     const walkOffset = frame === 1 ? -1 : frame === 2 ? 1 : 0;
 
     // Body
-    ctx.fillStyle = '#3355aa';
+    ctx.fillStyle = bodyColor;
     ctx.fillRect(ox + 4, oy + 6, 8, 7);
 
     // Head
-    ctx.fillStyle = '#f0c8a0';
+    ctx.fillStyle = skinColor;
     ctx.fillRect(ox + 5, oy + 1, 6, 5);
 
     // Hair
-    ctx.fillStyle = '#8b4513';
+    ctx.fillStyle = hairColor;
     if (direction === 'up') {
       ctx.fillRect(ox + 5, oy + 1, 6, 2);
     } else {
@@ -184,41 +211,34 @@ export class BootScene extends Phaser.Scene {
   }
 
   private generateBuildingSprite() {
-    // Building: a larger sprite (3x3 tiles = 48x48)
     const BW = TILE_SIZE * 3;
     const BH = TILE_SIZE * 3;
     const canvas = this.textures.createCanvas('building', BW, BH)!;
     const ctx = canvas.getContext();
 
-    // Main structure
     ctx.fillStyle = '#8b7355';
     ctx.fillRect(4, 12, BW - 8, BH - 12);
 
-    // Roof
     ctx.fillStyle = '#a0522d';
     ctx.fillRect(0, 4, BW, 12);
     ctx.fillStyle = '#8b4513';
     ctx.fillRect(4, 0, BW - 8, 8);
 
-    // Door
     ctx.fillStyle = '#6b4226';
     ctx.fillRect(18, BH - 16, 12, 16);
     ctx.fillStyle = '#8b5a2b';
     ctx.fillRect(20, BH - 14, 8, 14);
 
-    // Windows
     ctx.fillStyle = '#87ceeb';
     ctx.fillRect(6, 20, 8, 8);
     ctx.fillRect(34, 20, 8, 8);
 
-    // Window frames
     ctx.fillStyle = '#6b4226';
     ctx.fillRect(10, 20, 1, 8);
     ctx.fillRect(6, 24, 8, 1);
     ctx.fillRect(38, 20, 1, 8);
     ctx.fillRect(34, 24, 8, 1);
 
-    // Doorknob
     ctx.fillStyle = '#daa520';
     ctx.fillRect(26, BH - 8, 2, 2);
 

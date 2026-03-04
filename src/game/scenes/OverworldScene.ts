@@ -1,182 +1,94 @@
 import Phaser from 'phaser';
 import { TILE_SIZE } from '../config';
 import { Player } from '../entities/Player';
+import { NPC } from '../entities/NPC';
+import { generateVillage, generateOverworldMapData } from '../systems/MapGenerator';
+import { generateNPCDialogue } from '../systems/DialogueSystem';
+import {
+  platformTeam,
+  getTeamMembers,
+  getTeamComponents,
+  getTeamApis,
+  getEntityByRef,
+} from '../../data/mock-catalog';
+import { useGameStore, type DialogueLine } from '../../store/gameStore';
+import type { VillageState, BuildingState } from '../../data/types';
 
-// Simple overworld map layout
-// 0 = grass, 1 = path, 2 = water, 3 = wall, 4 = tree
 const MAP_WIDTH = 40;
 const MAP_HEIGHT = 30;
 
-function generateOverworldMap(): number[][] {
-  const map: number[][] = [];
-
-  for (let y = 0; y < MAP_HEIGHT; y++) {
-    const row: number[] = [];
-    for (let x = 0; x < MAP_WIDTH; x++) {
-      // Border: water on edges
-      if (x === 0 || x === MAP_WIDTH - 1 || y === 0 || y === MAP_HEIGHT - 1) {
-        row.push(2);
-      }
-      // Second border: trees
-      else if (x === 1 || x === MAP_WIDTH - 2 || y === 1 || y === MAP_HEIGHT - 2) {
-        row.push(4);
-      }
-      // Path running through the middle
-      else if (y >= 14 && y <= 15 && x >= 2 && x <= MAP_WIDTH - 3) {
-        row.push(1);
-      }
-      // Vertical path to building area
-      else if (x >= 19 && x <= 20 && y >= 8 && y <= 14) {
-        row.push(1);
-      }
-      // Scattered trees for scenery
-      else if (
-        (x === 5 && y === 5) ||
-        (x === 6 && y === 5) ||
-        (x === 10 && y === 8) ||
-        (x === 30 && y === 6) ||
-        (x === 31 && y === 6) ||
-        (x === 25 && y === 20) ||
-        (x === 8 && y === 22) ||
-        (x === 9 && y === 22) ||
-        (x === 35 && y === 22) ||
-        (x === 12 && y === 12) ||
-        (x === 33 && y === 10) ||
-        (x === 34 && y === 10) ||
-        (x === 15 && y === 24) ||
-        (x === 28 && y === 24)
-      ) {
-        row.push(4);
-      }
-      // Everything else is grass
-      else {
-        row.push(0);
-      }
-    }
-    map.push(row);
-  }
-
-  return map;
-}
-
 export class OverworldScene extends Phaser.Scene {
   private player!: Player;
-  private collisionLayer!: Phaser.Tilemaps.TilemapLayer;
-  private buildingZone!: Phaser.GameObjects.Zone;
+  private npcs: NPC[] = [];
+  private buildingZones: { zone: Phaser.GameObjects.Zone; entityRef: string }[] = [];
   private interactHint!: Phaser.GameObjects.Text;
-  private nearBuilding = false;
+  private nearTarget: { type: 'building' | 'npc'; ref: string } | null = null;
+  private villageState!: VillageState;
+  private dialogueJustEnded = false;
 
   constructor() {
     super({ key: 'OverworldScene' });
   }
 
-  create(data?: { fromBuilding?: boolean }) {
-    const mapData = generateOverworldMap();
+  create(data?: { fromBuilding?: boolean; buildingRef?: string }) {
+    // Generate village from mock catalog
+    const members = getTeamMembers(platformTeam);
+    const components = getTeamComponents(platformTeam);
+    const apis = getTeamApis(platformTeam);
+    this.villageState = generateVillage(platformTeam, components, apis, members);
 
-    // Create a tilemap from the data
+    // Generate tile map
+    const mapData = generateOverworldMapData(MAP_WIDTH, MAP_HEIGHT, this.villageState);
+
     const tilemap = this.make.tilemap({
       data: mapData,
       tileWidth: TILE_SIZE,
       tileHeight: TILE_SIZE,
     });
 
-    // Add tile images as individual tile textures
     tilemap.addTilesetImage('0', 'tile_grass', TILE_SIZE, TILE_SIZE);
     tilemap.addTilesetImage('1', 'tile_path', TILE_SIZE, TILE_SIZE);
     tilemap.addTilesetImage('2', 'tile_water', TILE_SIZE, TILE_SIZE);
     tilemap.addTilesetImage('3', 'tile_wall', TILE_SIZE, TILE_SIZE);
     tilemap.addTilesetImage('4', 'tile_tree', TILE_SIZE, TILE_SIZE);
 
-    // We used a data-based tilemap, so the layer is auto-created
-    const layer = tilemap.layers[0].tilemapLayer;
-    if (!layer) {
-      // Fallback: create the layer manually
-      const tilesets = ['0', '1', '2', '3', '4'];
-      tilemap.createLayer(0, tilesets, 0, 0);
-    }
-
-    // Set collision on water and tree tiles
     tilemap.setCollision([2, 4]);
+    const collisionLayer = tilemap.layers[0].tilemapLayer;
 
-    this.collisionLayer = tilemap.layers[0].tilemapLayer;
-
-    // Place the building sprite
-    const buildingX = 19 * TILE_SIZE;
-    const buildingY = 6 * TILE_SIZE;
-    const buildingSprite = this.add.image(
-      buildingX + TILE_SIZE * 1.5,
-      buildingY + TILE_SIZE * 1.5,
-      'building',
-    );
-    buildingSprite.setDepth(buildingY + TILE_SIZE * 3);
-
-    // Building entry zone (in front of the door)
-    this.buildingZone = this.add.zone(
-      buildingX + TILE_SIZE * 1.5,
-      buildingY + TILE_SIZE * 3 + 4,
-      TILE_SIZE * 2,
-      TILE_SIZE,
-    );
-    this.physics.add.existing(this.buildingZone, true);
-
-    // Add collision bodies for building walls (around the building, excluding door)
-    const wallBodies = [
-      // Left side of building
-      { x: buildingX, y: buildingY, w: TILE_SIZE * 3, h: TILE_SIZE * 2.5 },
-      // Left of door
-      { x: buildingX, y: buildingY + TILE_SIZE * 2.5, w: TILE_SIZE * 1, h: TILE_SIZE * 0.5 },
-      // Right of door
-      {
-        x: buildingX + TILE_SIZE * 2,
-        y: buildingY + TILE_SIZE * 2.5,
-        w: TILE_SIZE * 1,
-        h: TILE_SIZE * 0.5,
-      },
-    ];
-
-    wallBodies.forEach(({ x, y, w, h }) => {
-      const wallBody = this.add.zone(x + w / 2, y + h / 2, w, h);
-      this.physics.add.existing(wallBody, true);
-      this.physics.add.collider(this.player?.sprite || this.add.zone(0, 0, 0, 0), wallBody);
-    });
-
-    // Determine player spawn position
-    let spawnX = 10 * TILE_SIZE;
-    let spawnY = 14 * TILE_SIZE;
-    if (data?.fromBuilding) {
-      spawnX = 19.5 * TILE_SIZE;
-      spawnY = 10 * TILE_SIZE;
+    // Determine player spawn
+    let spawnX = 20 * TILE_SIZE;
+    let spawnY = 22 * TILE_SIZE;
+    if (data?.fromBuilding && data.buildingRef) {
+      const building = this.villageState.buildings.find(
+        (b) => b.entityRef === data.buildingRef,
+      );
+      if (building) {
+        spawnX = (building.position.x + 1.5) * TILE_SIZE;
+        spawnY = (building.position.y + 4) * TILE_SIZE;
+      }
     }
 
     // Create player
     this.player = new Player(this, spawnX, spawnY);
+    this.physics.add.collider(this.player.sprite, collisionLayer);
 
-    // Re-add wall collisions with actual player sprite
-    wallBodies.forEach(({ x, y, w, h }) => {
-      const wallBody = this.add.zone(x + w / 2, y + h / 2, w, h);
-      this.physics.add.existing(wallBody, true);
-      this.physics.add.collider(this.player.sprite, wallBody);
-    });
+    // Place buildings
+    for (const building of this.villageState.buildings) {
+      this.placeBuilding(building);
+    }
 
-    // Tilemap collision
-    this.physics.add.collider(this.player.sprite, this.collisionLayer);
+    // Place NPCs
+    this.npcs = [];
+    for (const npcState of this.villageState.npcs) {
+      this.placeNPC(npcState);
+    }
 
-    // Building entry overlap
-    this.physics.add.overlap(this.player.sprite, this.buildingZone, () => {
-      this.nearBuilding = true;
-    });
-
-    // Camera setup
+    // Camera
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
-    this.cameras.main.setBounds(
-      0,
-      0,
-      MAP_WIDTH * TILE_SIZE,
-      MAP_HEIGHT * TILE_SIZE,
-    );
+    this.cameras.main.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
 
-    // Interact hint text
-    this.interactHint = this.add.text(0, 0, 'Press E to enter', {
+    // Interact hint
+    this.interactHint = this.add.text(0, 0, '', {
       fontSize: '10px',
       color: '#ffffff',
       backgroundColor: '#000000aa',
@@ -186,19 +98,164 @@ export class OverworldScene extends Phaser.Scene {
     this.interactHint.setVisible(false);
 
     // World bounds
-    this.physics.world.setBounds(
-      0,
-      0,
-      MAP_WIDTH * TILE_SIZE,
-      MAP_HEIGHT * TILE_SIZE,
+    this.physics.world.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
+
+    // Village name banner
+    const nameText = this.add.text(
+      20 * TILE_SIZE,
+      3 * TILE_SIZE,
+      this.villageState.teamName,
+      {
+        fontSize: '12px',
+        color: '#ffe0a0',
+        backgroundColor: '#000000aa',
+        padding: { x: 6, y: 3 },
+      },
     );
+    nameText.setOrigin(0.5, 0.5);
+    nameText.setDepth(1000);
   }
 
-  update() {
+  private placeBuilding(building: BuildingState) {
+    const bx = building.position.x * TILE_SIZE;
+    const by = building.position.y * TILE_SIZE;
+
+    const sprite = this.add.image(
+      bx + TILE_SIZE * 1.5,
+      by + TILE_SIZE * 1.5,
+      'building',
+    );
+    sprite.setDepth(by + TILE_SIZE * 3);
+
+    // Building name label
+    const label = this.add.text(
+      bx + TILE_SIZE * 1.5,
+      by - 2,
+      building.name,
+      {
+        fontSize: '7px',
+        color: '#ffe0a0',
+        backgroundColor: '#000000aa',
+        padding: { x: 2, y: 1 },
+      },
+    );
+    label.setOrigin(0.5, 1);
+    label.setDepth(1000);
+
+    // Entry zone in front of door
+    const zone = this.add.zone(
+      bx + TILE_SIZE * 1.5,
+      by + TILE_SIZE * 3 + 4,
+      TILE_SIZE * 2,
+      TILE_SIZE,
+    );
+    this.physics.add.existing(zone, true);
+    this.buildingZones.push({ zone, entityRef: building.entityRef });
+
+    // Collision walls around building
+    const wallDefs = [
+      { x: bx, y: by, w: TILE_SIZE * 3, h: TILE_SIZE * 2.5 },
+      { x: bx, y: by + TILE_SIZE * 2.5, w: TILE_SIZE * 1, h: TILE_SIZE * 0.5 },
+      {
+        x: bx + TILE_SIZE * 2,
+        y: by + TILE_SIZE * 2.5,
+        w: TILE_SIZE * 1,
+        h: TILE_SIZE * 0.5,
+      },
+    ];
+    for (const def of wallDefs) {
+      const wallBody = this.add.zone(
+        def.x + def.w / 2,
+        def.y + def.h / 2,
+        def.w,
+        def.h,
+      );
+      this.physics.add.existing(wallBody, true);
+      this.physics.add.collider(this.player.sprite, wallBody);
+    }
+
+    // Overlap for entry
+    this.physics.add.overlap(this.player.sprite, zone, () => {
+      this.nearTarget = { type: 'building', ref: building.entityRef };
+    });
+  }
+
+  private placeNPC(npcState: {
+    entityRef: string;
+    name: string;
+    position: { x: number; y: number };
+    spriteIndex: number;
+  }) {
+    const px = npcState.position.x * TILE_SIZE + TILE_SIZE / 2;
+    const py = npcState.position.y * TILE_SIZE + TILE_SIZE / 2;
+    const textureKey = `npc_${npcState.spriteIndex % 6}`;
+
+    const npc = new NPC(this, px, py, textureKey, npcState.entityRef, npcState.name);
+    this.npcs.push(npc);
+
+    // Collision so player can't walk through NPC
+    this.physics.add.collider(this.player.sprite, npc.sprite);
+
+    // Interaction zone (larger than sprite)
+    const interactZone = this.add.zone(px, py, TILE_SIZE * 2.5, TILE_SIZE * 2.5);
+    this.physics.add.existing(interactZone, true);
+    this.physics.add.overlap(this.player.sprite, interactZone, () => {
+      this.nearTarget = { type: 'npc', ref: npcState.entityRef };
+    });
+  }
+
+  update(_time: number) {
+    const store = useGameStore.getState();
+
+    // If dialogue is active, freeze player
+    if (store.dialogueActive) {
+      this.player.sprite.setVelocity(0, 0);
+      this.interactHint.setVisible(false);
+
+      if (this.player.interactPressed()) {
+        store.advanceDialogue();
+        // Check if dialogue just ended
+        if (!useGameStore.getState().dialogueActive) {
+          this.dialogueJustEnded = true;
+          // Show detail panel for the NPC
+          const ref = store.dialogueEntityRef;
+          if (ref) {
+            const entity = getEntityByRef(ref);
+            if (entity) {
+              useGameStore.getState().showDetailPanel(entity);
+            }
+          }
+        }
+      }
+
+      this.nearTarget = null;
+      return;
+    }
+
+    // If detail panel is open, freeze player
+    if (store.detailPanelEntity) {
+      this.player.sprite.setVelocity(0, 0);
+      this.interactHint.setVisible(false);
+      this.nearTarget = null;
+      if (this.dialogueJustEnded) {
+        this.dialogueJustEnded = false;
+      }
+      return;
+    }
+
+    // Normal movement
     this.player.update();
 
-    // Check building proximity
-    if (this.nearBuilding) {
+    // Update NPCs
+    for (const npc of this.npcs) {
+      npc.update(_time);
+    }
+
+    // Handle interaction
+    if (this.nearTarget) {
+      const hintText =
+        this.nearTarget.type === 'npc' ? 'Press E to talk' : 'Press E to enter';
+      this.interactHint.setText(hintText);
       this.interactHint.setPosition(
         this.player.sprite.x - 30,
         this.player.sprite.y - 20,
@@ -206,13 +263,47 @@ export class OverworldScene extends Phaser.Scene {
       this.interactHint.setVisible(true);
 
       if (this.player.interactPressed()) {
-        this.scene.start('BuildingScene');
+        if (this.nearTarget.type === 'npc') {
+          this.startNPCDialogue(this.nearTarget.ref);
+        } else {
+          this.enterBuilding(this.nearTarget.ref);
+        }
       }
     } else {
       this.interactHint.setVisible(false);
     }
 
-    // Reset for next frame
-    this.nearBuilding = false;
+    this.nearTarget = null;
+  }
+
+  private startNPCDialogue(ref: string) {
+    const entity = getEntityByRef(ref);
+    if (!entity) return;
+
+    const displayName =
+      (entity.spec.profile as { displayName?: string })?.displayName ??
+      entity.metadata.name;
+    const role = (entity.spec.role as string) ?? 'Villager';
+
+    const rawLines = generateNPCDialogue(entity);
+    const dialogueLines: DialogueLine[] = rawLines.map((text) => ({
+      speaker: `${displayName} — ${role}`,
+      text,
+    }));
+
+    useGameStore.getState().startDialogue(dialogueLines, ref);
+    useGameStore.getState().unlockEntity(ref);
+
+    // Make the NPC face the player
+    const npc = this.npcs.find((n) => n.entityRef === ref);
+    if (npc) {
+      npc.facePlayer(this.player.sprite.x, this.player.sprite.y);
+    }
+  }
+
+  private enterBuilding(ref: string) {
+    useGameStore.getState().unlockEntity(ref);
+    useGameStore.getState().setActiveBuilding(ref);
+    this.scene.start('BuildingScene', { entityRef: ref });
   }
 }
