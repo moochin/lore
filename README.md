@@ -95,11 +95,79 @@ LORE can connect to a live Backstage instance and generate the world from your r
 | Field | What to enter |
 |---|---|
 | **Catalog URL** | Your Backstage base URL, e.g. `https://backstage.example.com` |
-| **Service Token** | A Backstage service-to-service token for the Catalog API |
+| **API Token** | A Backstage external access token for the Catalog API |
 
 Once connected, LORE fetches groups, components, APIs, and users from the `/api/catalog/entities` endpoint and rebuilds the world around your real organisation. Your token is encrypted in `localStorage` using a session-derived key — it never leaves the browser.
 
 You can disconnect or reconfigure at any time by pressing **B** again.
+
+---
+
+### 🔑 Getting an API Token
+
+LORE sends requests as `Authorization: Bearer <token>`. The simplest way to grant access is an **external access token** configured directly in your Backstage `app-config.yaml`.
+
+**Step 1 — Add a static external access token** ([Backstage docs: Service-to-service auth](https://backstage.io/docs/auth/service-to-service-auth#static-tokens))
+
+```yaml
+# app-config.yaml
+backend:
+  auth:
+    externalAccess:
+      - type: static
+        options:
+          token: ${LORE_TOKEN}   # set this env var to a long random secret
+          subject: lore-explorer
+```
+
+Generate a suitable secret with:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**Step 2 — Restart Backstage** to pick up the config change.
+
+**Step 3 — Paste the token value** into LORE's API Token field.
+
+> **Note:** `externalAccess` static tokens require Backstage **v1.20+**. For older versions, see [legacy static token auth](https://backstage.io/docs/tutorials/authenticate-api-requests).
+
+---
+
+### 🌐 CORS Configuration
+
+Because LORE runs in your browser, requests go directly from your origin to Backstage. If your instance is on a different domain you may need to allow LORE's origin explicitly. ([Backstage docs: CORS](https://backstage.io/docs/conf/writing#cors))
+
+```yaml
+# app-config.yaml
+backend:
+  cors:
+    origin: https://your-lore-deployment.example.com
+    methods: [GET]
+    credentials: false
+```
+
+For local development you can allow all origins temporarily:
+```yaml
+backend:
+  cors:
+    origin: '*'
+```
+
+---
+
+### 💻 Local Development (no token needed)
+
+When you point LORE at `localhost` or `127.0.0.1`, it automatically attempts guest auth — no token required. This works out of the box with a standard local Backstage dev setup ([Backstage docs: Guest auth provider](https://backstage.io/docs/auth/guest/provider)).
+
+```bash
+# Start your local Backstage
+yarn dev
+
+# Point LORE at:
+http://localhost:7007
+```
+
+Leave the API Token field blank and LORE will negotiate a guest token automatically.
 
 ---
 
