@@ -217,8 +217,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ backstageConfigured: false, backstageBaseUrl: null });
   },
 
-  // Config panel overlay — auto-open on first visit when no live connection
-  configPanelOpen: !hasLiveToken(),
+  // Config panel overlay — auto-open on first visit when no live connection.
+  // Suppressed when env-var credentials are present (auto-connect will handle it).
+  configPanelOpen: !hasLiveToken() && !(
+    import.meta.env.VITE_BACKSTAGE_BASE_URL && import.meta.env.VITE_BACKSTAGE_TOKEN
+  ),
   openConfigPanel: () => set({ configPanelOpen: true }),
   closeConfigPanel: () => set({ configPanelOpen: false }),
 }));

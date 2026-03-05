@@ -155,6 +155,26 @@ backend:
 
 ---
 
+### 🚀 Pre-configured Deployments (env vars)
+
+For hosted or automated deployments where you want the connection screen skipped entirely, set both env vars at **build time**:
+
+```bash
+VITE_BACKSTAGE_BASE_URL=https://backstage.example.com
+VITE_BACKSTAGE_TOKEN=your-token-here
+```
+
+When both are present, LORE auto-connects on load and goes straight to the game — no connection screen, no manual entry required.
+
+> [!WARNING]
+> `VITE_*` variables are **baked into the compiled JavaScript bundle**. Anyone who can load the page can read the token value from the source. Only use this approach for:
+> - **Private/internal deployments** behind authentication (SSO, VPN, etc.)
+> - Environments where the Backstage token is low-privilege and read-only
+>
+> For public deployments, leave these env vars unset and let users supply their own tokens through the connection panel.
+
+---
+
 ### 💻 Local Development (no token needed)
 
 When you point LORE at `localhost` or `127.0.0.1`, it automatically attempts guest auth — no token required. This works out of the box with a standard local Backstage dev setup ([Backstage docs: Guest auth provider](https://backstage.io/docs/auth/guest/provider)).
