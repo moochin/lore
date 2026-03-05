@@ -1,3 +1,5 @@
+![Lore Logo](lore-logo.png)
+
 # ⚔️ LORE
 
 ### *logically-orchestrated-rpg-environment*
