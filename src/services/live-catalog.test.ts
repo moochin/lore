@@ -274,7 +274,7 @@ describe('initializeLiveCatalog', () => {
 
   it('filters out malformed entities missing kind', async () => {
     const valid = makeEntity('Component', 'svc-a');
-    const malformed = { apiVersion: 'v1', kind: '', metadata: { name: 'bad' }, spec: {} } as Entity;
+    const malformed = { apiVersion: 'v1', kind: '', metadata: { name: 'bad' }, spec: {} } as unknown as Entity;
     setupCache([valid, malformed]);
     const result = await initializeLiveCatalog({ baseUrl: 'https://example.com', token: 'tok' });
     // Only the valid one should be in the cache
