@@ -65,6 +65,13 @@ export class CatalogClient {
     do {
       const qs    = cursor ? `entities?cursor=${encodeURIComponent(cursor)}` : 'entities';
       const page  = await this.get<CatalogResponse>(qs);
+      if (!page || !Array.isArray(page.items)) {
+        throw new CatalogError(
+          0,
+          'Unexpected response',
+          `Expected { items: Entity[] } from catalog API but received: ${JSON.stringify(page).slice(0, 200)}`,
+        );
+      }
       all.push(...page.items);
       cursor = page.pageInfo?.nextCursor;
     } while (cursor);
@@ -77,6 +84,13 @@ export class CatalogClient {
     const page = await this.get<CatalogResponse>(
       `entities?filter=kind=${encodeURIComponent(kind)}`,
     );
+    if (!page || !Array.isArray(page.items)) {
+      throw new CatalogError(
+        0,
+        'Unexpected response',
+        `Expected { items: Entity[] } from catalog API but received: ${JSON.stringify(page).slice(0, 200)}`,
+      );
+    }
     return page.items;
   }
 

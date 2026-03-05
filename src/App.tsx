@@ -22,6 +22,8 @@ export default function App() {
       if (baseUrl) {
         setBackstageConnected(baseUrl).catch((err) => {
           console.error('Failed to auto-initialize live catalog:', err);
+          // Open config panel so the user can see the error and retry
+          useGameStore.getState().openConfigPanel();
         });
       }
     }

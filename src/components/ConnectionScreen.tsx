@@ -227,6 +227,16 @@ const S = {
     whiteSpace: 'pre' as const,
     overflowX: 'auto' as const,
   },
+  warning: {
+    background: '#3d2e12',
+    border: '1px solid #d29922',
+    borderRadius: 6,
+    padding: '9px 14px',
+    fontSize: 12,
+    color: '#d29922',
+    marginBottom: 16,
+    lineHeight: 1.6,
+  },
   skipBtn: {
     background: 'none',
     border: 'none',
@@ -260,6 +270,7 @@ export function ConnectionScreen() {
   const closeConfigPanel      = useGameStore((s) => s.closeConfigPanel);
   const backstageConfigured   = useGameStore((s) => s.backstageConfigured);
   const disconnectBackstage   = useGameStore((s) => s.disconnectBackstage);
+  const catalogWarnings       = useGameStore((s) => s.catalogWarnings);
 
   const [url,           setUrl]           = useState(loadBaseUrl() ?? '');
   const [token,         setToken]         = useState('');
@@ -337,7 +348,11 @@ export function ConnectionScreen() {
         await setBackstageConnected(url.trim());
       } catch (err) {
         setPhase('error');
-        setErrorMsg('Failed to load catalog data. Check your connection and try again.');
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load catalog data. Check your connection and try again.',
+        );
         console.error('Failed to initialize live catalog:', err);
       }
     }, 600);
@@ -456,6 +471,15 @@ export function ConnectionScreen() {
             {/* ── Error ── */}
             {phase === 'error' && (
               <div style={S.error}>⚠️ {errorMsg}</div>
+            )}
+
+            {/* ── Catalog warnings (connected but data issues) ── */}
+            {catalogWarnings.length > 0 && (
+              <div style={S.warning}>
+                {catalogWarnings.map((w, i) => (
+                  <div key={i}>⚠ {w}</div>
+                ))}
+              </div>
             )}
 
             {/* ── Submit ── */}

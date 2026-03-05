@@ -24,7 +24,15 @@ class LiveCatalogCache {
 
     this.loadPromise = (async () => {
       try {
-        this.allEntities = await client.getAllEntities();
+        const raw = await client.getAllEntities();
+        // Filter out entities missing required fields to avoid downstream crashes
+        const malformed = raw.filter((e) => !e.kind || !e.metadata?.name);
+        if (malformed.length > 0) {
+          console.warn(
+            `Catalog: skipped ${malformed.length} entities missing kind or metadata.name`,
+          );
+        }
+        this.allEntities = raw.filter((e) => e.kind && e.metadata?.name);
         // Index by kind for faster lookups
         this.entitiesByKind.clear();
         for (const entity of this.allEntities) {
@@ -63,13 +71,38 @@ class LiveCatalogCache {
 // Global cache instance
 const cache = new LiveCatalogCache();
 
+export interface CatalogLoadResult {
+  ok: true;
+  warnings: string[];
+  entityCount: number;
+  teamCount: number;
+}
+
 /**
  * Initialize the live catalog with a Backstage connection.
  * Must be called once before using any of the helper functions below.
+ * Returns warnings about data quality (e.g. empty catalog, no teams found).
  */
-export async function initializeLiveCatalog(config: BackstageConfig): Promise<void> {
+export async function initializeLiveCatalog(config: BackstageConfig): Promise<CatalogLoadResult> {
   const client = new CatalogClient(config);
   await cache.load(client);
+
+  const warnings: string[] = [];
+  const allEntities = cache.getAll();
+  const teams = getAllTeams();
+
+  if (allEntities.length === 0) {
+    warnings.push(
+      'Your Backstage catalog returned 0 entities. The catalog may be empty or your token may lack read permissions.',
+    );
+  } else if (teams.length === 0) {
+    warnings.push(
+      `Found ${allEntities.length} entities but no teams (Groups with spec.type "team"). ` +
+      'Villages are generated from teams — check that your Backstage groups use spec.type: "team".',
+    );
+  }
+
+  return { ok: true, warnings, entityCount: allEntities.length, teamCount: teams.length };
 }
 
 /**
