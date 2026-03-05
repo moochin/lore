@@ -4,6 +4,13 @@
 
 ### *logically-orchestrated-rpg-environment*
 
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Phaser](https://img.shields.io/badge/Phaser-3.90-8C4A2F)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-5-FF6B35?logo=react&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-4-6E9F18?logo=vitest&logoColor=white)
+
 > **Your software catalog has a story to tell. LORE lets you live it.**
 
 ---
