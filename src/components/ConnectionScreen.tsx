@@ -292,18 +292,22 @@ export function ConnectionScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [closeConfigPanel]);
 
-  // Handle WASD typing in inputs (Phaser normally consumes these keys)
+  // Handle keys that Phaser captures via addKey() (W, A, S, D, E, M, Q).
+  // Phaser calls preventDefault on those keydown events, so we must manually
+  // insert the character ourselves to keep text inputs working.
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     onChangeHandler: (e: React.ChangeEvent<HTMLInputElement>) => void,
   ) => {
-    const key = e.key.toLowerCase();
-    if (['w', 'a', 's', 'd'].includes(key)) {
+    const lower = e.key.toLowerCase();
+    if (['w', 'a', 's', 'd', 'e', 'm', 'q'].includes(lower)) {
       e.preventDefault();
       const input = e.currentTarget;
-      const start = input.selectionStart || 0;
-      const end = input.selectionEnd || 0;
-      const newValue = input.value.substring(0, start) + key + input.value.substring(end);
+      const start = input.selectionStart ?? 0;
+      const end = input.selectionEnd ?? 0;
+      // Preserve the actual character (respects Shift for uppercase)
+      const char = e.key.length === 1 ? e.key : lower;
+      const newValue = input.value.substring(0, start) + char + input.value.substring(end);
       input.value = newValue;
       input.selectionStart = input.selectionEnd = start + 1;
       // Trigger onChange manually
@@ -399,27 +403,29 @@ export function ConnectionScreen() {
                 </span>
               )}
             </label>
-            <input
-              id="lore-token"
-              type={showToken ? 'text' : 'password'}
-              placeholder="••••••••••••••••••••••••"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, (e) => setToken(e.target.value))}
-              onFocus={() => setTokenFocused(true)}
-              onBlur={() => setTokenFocused(false)}
-              style={{ ...S.input, paddingRight: 36, ...(tokenFocused ? S.inputFocused : {}) }}
-              autoComplete="current-password"
-              required={!isLocalhost}
-            />
-            <button
-              type="button"
-              style={S.eyeBtn}
-              onClick={() => setShowToken((v) => !v)}
-              title={showToken ? 'Hide token' : 'Show token'}
-            >
-              {showToken ? '🙈' : '👁'}
-            </button>
+            <div style={{ position: 'relative' }}>
+              <input
+                id="lore-token"
+                type={showToken ? 'text' : 'password'}
+                placeholder="••••••••••••••••••••••••"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, (e) => setToken(e.target.value))}
+                onFocus={() => setTokenFocused(true)}
+                onBlur={() => setTokenFocused(false)}
+                style={{ ...S.input, paddingRight: 36, ...(tokenFocused ? S.inputFocused : {}) }}
+                autoComplete="current-password"
+                required={!isLocalhost}
+              />
+              <button
+                type="button"
+                style={S.eyeBtn}
+                onClick={() => setShowToken((v) => !v)}
+                title={showToken ? 'Hide token' : 'Show token'}
+              >
+                {showToken ? '🙈' : '👁'}
+              </button>
+            </div>
           </div>
 
           {/* ── Re-entry notice ── */}
