@@ -19,6 +19,21 @@ interface CatalogResponse {
   pageInfo?: { nextCursor?: string };
 }
 
+/** Normalise the two response shapes the catalog endpoint can return. */
+function extractPage(raw: CatalogResponse | Entity[]): { items: Entity[]; nextCursor?: string } {
+  if (Array.isArray(raw)) {
+    return { items: raw };
+  }
+  if (raw && Array.isArray(raw.items)) {
+    return { items: raw.items, nextCursor: raw.pageInfo?.nextCursor };
+  }
+  throw new CatalogError(
+    0,
+    'Unexpected response',
+    `Expected Entity[] or { items: Entity[] } from catalog API but received: ${JSON.stringify(raw).slice(0, 200)}`,
+  );
+}
+
 export class CatalogClient {
   private readonly base: string;
   private readonly token: string;
@@ -63,17 +78,11 @@ export class CatalogClient {
     let cursor: string | undefined;
 
     do {
-      const qs    = cursor ? `entities?cursor=${encodeURIComponent(cursor)}` : 'entities';
-      const page  = await this.get<CatalogResponse>(qs);
-      if (!page || !Array.isArray(page.items)) {
-        throw new CatalogError(
-          0,
-          'Unexpected response',
-          `Expected { items: Entity[] } from catalog API but received: ${JSON.stringify(page).slice(0, 200)}`,
-        );
-      }
-      all.push(...page.items);
-      cursor = page.pageInfo?.nextCursor;
+      const qs   = cursor ? `entities?cursor=${encodeURIComponent(cursor)}` : 'entities';
+      const raw  = await this.get<CatalogResponse | Entity[]>(qs);
+      const { items, nextCursor } = extractPage(raw);
+      all.push(...items);
+      cursor = nextCursor;
     } while (cursor);
 
     return all;
@@ -81,17 +90,10 @@ export class CatalogClient {
 
   /** Fetch entities filtered by kind (e.g. "Group", "Component", "API"). */
   async getEntitiesByKind(kind: string): Promise<Entity[]> {
-    const page = await this.get<CatalogResponse>(
+    const raw = await this.get<CatalogResponse | Entity[]>(
       `entities?filter=kind=${encodeURIComponent(kind)}`,
     );
-    if (!page || !Array.isArray(page.items)) {
-      throw new CatalogError(
-        0,
-        'Unexpected response',
-        `Expected { items: Entity[] } from catalog API but received: ${JSON.stringify(page).slice(0, 200)}`,
-      );
-    }
-    return page.items;
+    return extractPage(raw).items;
   }
 
   /**
