@@ -292,27 +292,18 @@ export function ConnectionScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [closeConfigPanel]);
 
-  // Handle keys that Phaser captures via addKey() (W, A, S, D, E, M, Q).
-  // Phaser calls preventDefault on those keydown events, so we must manually
-  // insert the character ourselves to keep text inputs working.
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    onChangeHandler: (e: React.ChangeEvent<HTMLInputElement>) => void,
-  ) => {
-    const lower = e.key.toLowerCase();
-    if (['w', 'a', 's', 'd', 'e', 'm', 'q'].includes(lower)) {
-      e.preventDefault();
-      const input = e.currentTarget;
-      const start = input.selectionStart ?? 0;
-      const end = input.selectionEnd ?? 0;
-      // Preserve the actual character (respects Shift for uppercase)
-      const char = e.key.length === 1 ? e.key : lower;
-      const newValue = input.value.substring(0, start) + char + input.value.substring(end);
-      input.value = newValue;
-      input.selectionStart = input.selectionEnd = start + 1;
-      // Trigger onChange manually
-      onChangeHandler({ target: input } as React.ChangeEvent<HTMLInputElement>);
+  // Phaser registers a global window keydown listener and calls preventDefault()
+  // on every key it has captured (WASD, E, M, Q, arrow keys, space, etc.).
+  // Stopping propagation here prevents the event from ever reaching Phaser's
+  // window listener, so the browser handles all input naturally — character
+  // insertion, cursor movement, everything — with no manual workarounds needed.
+  // Escape is handled explicitly so the panel can still be closed while typing.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      closeConfigPanel();
+      return;
     }
+    e.stopPropagation();
   };
 
   // Auto-focus the token field when re-entering (URL already saved)
@@ -378,7 +369,7 @@ export function ConnectionScreen() {
                 placeholder="https://backstage.example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, (e) => setUrl(e.target.value))}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setUrlFocused(true)}
                 onBlur={() => setUrlFocused(false)}
                 style={{ ...S.input, ...(urlFocused ? S.inputFocused : {}) }}
@@ -410,7 +401,7 @@ export function ConnectionScreen() {
                 placeholder="••••••••••••••••••••••••"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, (e) => setToken(e.target.value))}
+                onKeyDown={handleKeyDown}
                 onFocus={() => setTokenFocused(true)}
                 onBlur={() => setTokenFocused(false)}
                 style={{ ...S.input, paddingRight: 36, ...(tokenFocused ? S.inputFocused : {}) }}
