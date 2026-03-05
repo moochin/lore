@@ -399,7 +399,7 @@ export function ConnectionScreen() {
               onBlur={() => setTokenFocused(false)}
               style={{ ...S.input, paddingRight: 36, ...(tokenFocused ? S.inputFocused : {}) }}
               autoComplete="current-password"
-              required
+              required={!isLocalhost}
             />
             <button
               type="button"
