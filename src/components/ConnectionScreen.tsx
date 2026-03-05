@@ -23,12 +23,26 @@ const S = {
   },
   card: {
     width: '100%',
-    maxWidth: 480,
+    maxWidth: 1000,
     background: '#161b22',
     border: '1px solid #30363d',
     borderRadius: 8,
-    padding: '32px 32px 24px',
+    padding: '32px 40px',
     boxShadow: '0 16px 64px rgba(0,0,0,0.7)',
+    display: 'flex',
+    gap: 40,
+  },
+  leftSection: {
+    flex: '0 0 320px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 16,
+  },
+  rightSection: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'space-between',
   },
   logo: {
     textAlign: 'center' as const,
@@ -333,32 +347,8 @@ export function ConnectionScreen() {
     <div style={S.overlay}>
       <div style={S.card}>
 
-        {/* ── Logo ── */}
-        <div style={S.logo}>
-          <span style={S.logoIcon}>⚔️</span>
-          <h1 style={S.title}>LORE</h1>
-          <p style={S.subtitle}>Logically Orchestrated RPG Environment</p>
-        </div>
-
-        <hr style={S.divider} />
-
-        <p style={S.tagline}>
-          Connect to your Backstage catalog and explore your organisation<br />
-          as a living, breathing 16-bit RPG world.
-        </p>
-
-        {/* ── Re-entry notice ── */}
-        {isReEntry && (
-          <div style={S.reEntryBanner}>
-            ✅ <strong>Welcome back, adventurer.</strong> Your Backstage URL is saved.
-            Re-enter your API token to resume your journey — session keys clear when
-            the tab closes, keeping your credentials safe.
-          </div>
-        )}
-
-        {/* ── Form ── */}
-        <form onSubmit={handleConnect}>
-
+        {/* ── Left Side: Input Fields ── */}
+        <div style={S.leftSection}>
           {/* URL field */}
           {!isReEntry && (
             <div style={S.inputWrap}>
@@ -417,6 +407,15 @@ export function ConnectionScreen() {
             </button>
           </div>
 
+          {/* ── Re-entry notice ── */}
+          {isReEntry && (
+            <div style={S.reEntryBanner}>
+              ✅ <strong>Welcome back, adventurer.</strong> Your Backstage URL is saved.
+              Re-enter your API token to resume your journey — session keys clear when
+              the tab closes, keeping your credentials safe.
+            </div>
+          )}
+
           {/* ── Security notes ── */}
           <div style={S.securityBox}>
             <div style={{ ...S.securityRow, marginBottom: 10 }}>
@@ -424,129 +423,143 @@ export function ConnectionScreen() {
               <div>
                 <span style={S.securityTitle}>Local-only encryption</span>
                 Your token is encrypted with <strong>AES-256-GCM</strong> before
-                being written to localStorage. The encryption key lives in session
-                memory only — it is never written to disk or sent anywhere.
-                When you close this tab, the key is gone.
+                being written to localStorage.
               </div>
             </div>
             <div style={S.securityRow}>
               <span style={S.securityIcon}>🔍</span>
               <div>
                 <span style={S.securityTitle}>Verify it yourself</span>
-                Open your browser's <span style={S.networkHighlight}>Network Tab</span> — you'll
-                see requests go directly to your Backstage instance and{' '}
-                <span style={S.networkHighlight}>nowhere else</span>.
-                No proxy. No analytics. No third-party calls.
+                Open your browser's <span style={S.networkHighlight}>Network Tab</span> — requests go directly to your Backstage instance only.
               </div>
             </div>
           </div>
+        </div>
 
-          {/* ── Error ── */}
-          {phase === 'error' && (
-            <div style={S.error}>⚠️ {errorMsg}</div>
-          )}
+        {/* ── Right Side: Info & Controls ── */}
+        <div style={S.rightSection}>
+          <form onSubmit={handleConnect} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* ── Logo ── */}
+            <div style={S.logo}>
+              <span style={S.logoIcon}>⚔️</span>
+              <h1 style={S.title}>LORE</h1>
+              <p style={S.subtitle}>Logically Orchestrated RPG Environment</p>
+            </div>
 
-          {/* ── Submit ── */}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            style={{
-              ...S.connectBtn,
-              ...(!canSubmit ? S.connectBtnDisabled : {}),
-            }}
-          >
-            {phase === 'testing' ? '⏳  Connecting…' :
-             phase === 'success' ? '✅  Connected! Entering the realm…' :
-             '▶  Enter the Realm'}
-          </button>
+            <hr style={S.divider} />
 
-          {/* ── Skip / close / disconnect ── */}
-          {backstageConfigured ? (
-            <div style={{ textAlign: 'center', marginTop: 4 }}>
+            <p style={S.tagline}>
+              Connect to your Backstage catalog and explore your organisation
+              as a living, breathing 16-bit RPG world.
+            </p>
+
+            {/* ── Error ── */}
+            {phase === 'error' && (
+              <div style={S.error}>⚠️ {errorMsg}</div>
+            )}
+
+            {/* ── Submit ── */}
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              style={{
+                ...S.connectBtn,
+                ...(!canSubmit ? S.connectBtnDisabled : {}),
+              }}
+            >
+              {phase === 'testing' ? '⏳  Connecting…' :
+               phase === 'success' ? '✅  Connected! Entering the realm…' :
+               '▶  Enter the Realm'}
+            </button>
+
+            {/* ── Skip / close / disconnect ── */}
+            {backstageConfigured ? (
+              <div style={{ textAlign: 'center', marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={closeConfigPanel}
+                  style={S.skipBtn}
+                >
+                  Close
+                </button>
+                <span style={S.footerSep}>·</span>
+                <button
+                  type="button"
+                  onClick={() => { disconnectBackstage(); setUrl(''); setToken(''); setPhase('idle'); }}
+                  style={{ ...S.skipBtn, color: '#f85149' }}
+                >
+                  Disconnect
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
                 onClick={closeConfigPanel}
-                style={S.skipBtn}
+                style={{ ...S.connectBtn, marginTop: 8 }}
               >
-                Close
+                ▶  Explore with Mock Data
               </button>
-              <span style={S.footerSep}>·</span>
-              <button
-                type="button"
-                onClick={() => { disconnectBackstage(); setUrl(''); setToken(''); setPhase('idle'); }}
-                style={{ ...S.skipBtn, color: '#f85149' }}
-              >
-                Disconnect
-              </button>
+            )}
+
+            <div style={{ textAlign: 'center', fontSize: 10, color: '#484f58', marginTop: 8 }}>
+              Press <kbd style={S.kbd}>B</kbd> anytime in-game to open this panel
             </div>
-          ) : (
+          </form>
+
+          {/* ── Footer ── */}
+          <div style={S.footer}>
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" style={S.footerLink}>
+              📖 View Source
+            </a>
+            <span style={S.footerSep}>·</span>
             <button
-              type="button"
-              onClick={closeConfigPanel}
-              style={{ ...S.connectBtn, marginTop: 8 }}
+              onClick={() => setShowAbout((v) => !v)}
+              style={{ ...S.footerLink, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}
             >
-              ▶  Explore with Mock Data
+              {showAbout ? '▲ Hide' : '▾ About & Security'}
             </button>
-          )}
 
-          <div style={{ textAlign: 'center', fontSize: 10, color: '#484f58', marginTop: 8 }}>
-            Press <kbd style={S.kbd}>B</kbd> anytime in-game to open this panel
-          </div>
-        </form>
+            {showAbout && (
+              <div style={S.aboutBox}>
+                <strong style={{ color: '#c9d1d9' }}>About LORE</strong>
+                <p style={{ marginTop: 6 }}>
+                  LORE is an open-source tool that transforms your Backstage software
+                  catalog into an explorable 16-bit RPG world. Teams become villages,
+                  services become buildings, and your colleagues become NPCs who share
+                  the real lore of your organisation.
+                </p>
+                <p style={{ marginTop: 8 }}>
+                  All source code is publicly auditable at{' '}
+                  <a href={REPO_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#79c0ff' }}>
+                    {REPO_URL}
+                  </a>.
+                </p>
 
-        {/* ── Footer ── */}
-        <div style={S.footer}>
-          <a href={REPO_URL} target="_blank" rel="noopener noreferrer" style={S.footerLink}>
-            📖 View Source
-          </a>
-          <span style={S.footerSep}>·</span>
-          <button
-            onClick={() => setShowAbout((v) => !v)}
-            style={{ ...S.footerLink, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontFamily: 'inherit' }}
-          >
-            {showAbout ? '▲ Hide' : '▾ About & Security'}
-          </button>
+                <hr style={{ border: 'none', borderTop: '1px solid #21262d', margin: '12px 0' }} />
 
-          {showAbout && (
-            <div style={S.aboutBox}>
-              <strong style={{ color: '#c9d1d9' }}>About LORE</strong>
-              <p style={{ marginTop: 6 }}>
-                LORE is an open-source tool that transforms your Backstage software
-                catalog into an explorable 16-bit RPG world. Teams become villages,
-                services become buildings, and your colleagues become NPCs who share
-                the real lore of your organisation.
-              </p>
-              <p style={{ marginTop: 8 }}>
-                All source code is publicly auditable at{' '}
-                <a href={REPO_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#79c0ff' }}>
-                  {REPO_URL}
-                </a>.
-              </p>
-
-              <hr style={{ border: 'none', borderTop: '1px solid #21262d', margin: '12px 0' }} />
-
-              <strong style={{ color: '#c9d1d9' }}>🛡️ For self-hosters — Content Security Policy</strong>
-              <p style={{ marginTop: 6 }}>
-                If you host LORE yourself, add a strict{' '}
-                <code style={{ color: '#79c0ff' }}>Content-Security-Policy</code> header
-                on your server to restrict the browser to only your Backstage instance:
-              </p>
-              <code style={S.cspCode}>
+                <strong style={{ color: '#c9d1d9' }}>🛡️ For self-hosters — Content Security Policy</strong>
+                <p style={{ marginTop: 6 }}>
+                  If you host LORE yourself, add a strict{' '}
+                  <code style={{ color: '#79c0ff' }}>Content-Security-Policy</code> header
+                  on your server to restrict the browser to only your Backstage instance:
+                </p>
+                <code style={S.cspCode}>
 {`Content-Security-Policy:
   default-src 'self';
   script-src  'self' 'unsafe-inline';
   style-src   'self' 'unsafe-inline';
   img-src     'self' data: blob:;
   connect-src 'self' https://backstage.your-company.com;`}
-              </code>
-              <p style={{ marginTop: 8 }}>
-                Replace <code style={{ color: '#79c0ff' }}>https://backstage.your-company.com</code>{' '}
-                with your actual Backstage URL. This header instructs the browser to
-                block any outbound connection that is not to your instance — even
-                if malicious code were somehow injected.
-              </p>
-            </div>
-          )}
+                </code>
+                <p style={{ marginTop: 8 }}>
+                  Replace <code style={{ color: '#79c0ff' }}>https://backstage.your-company.com</code>{' '}
+                  with your actual Backstage URL. This header instructs the browser to
+                  block any outbound connection that is not to your instance — even
+                  if malicious code were somehow injected.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
