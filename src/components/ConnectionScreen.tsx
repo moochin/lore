@@ -318,8 +318,14 @@ export function ConnectionScreen() {
     setPhase('success');
 
     // Brief pause so the user sees success, then hand off to the game
-    setTimeout(() => {
-      setBackstageConnected(url.trim());
+    setTimeout(async () => {
+      try {
+        await setBackstageConnected(url.trim());
+      } catch (err) {
+        setPhase('error');
+        setErrorMsg('Failed to load catalog data. Check your connection and try again.');
+        console.error('Failed to initialize live catalog:', err);
+      }
     }, 600);
   }
 

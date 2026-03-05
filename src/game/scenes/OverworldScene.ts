@@ -7,7 +7,7 @@ import { generateNPCDialogue } from '../systems/DialogueSystem';
 import {
   getAllTeams,
   getEntityByRef,
-} from '../../data/mock-catalog';
+} from '../../data/catalog-provider';
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { WorldState, BuildingState } from '../../data/types';
 

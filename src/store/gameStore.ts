@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { Entity } from '../data/types';
-import { loadBaseUrl, hasLiveToken, clearCredentials } from '../services/tokenStore';
+import { loadBaseUrl, hasLiveToken, clearCredentials, loadToken } from '../services/tokenStore';
+import { initializeLiveCatalog } from '../services/live-catalog';
+import { disableLiveCatalog, enableLiveCatalog } from '../data/catalog-provider';
 
 export interface DialogueLine {
   speaker: string;
@@ -81,8 +83,9 @@ interface GameState {
   // Backstage connection
   backstageConfigured: boolean;
   backstageBaseUrl: string | null;
-  setBackstageConnected: (baseUrl: string) => void;
+  setBackstageConnected: (baseUrl: string) => Promise<void>;
   disconnectBackstage: () => void;
+  catalogLoading: boolean;
 
   // Config panel overlay (B key)
   configPanelOpen: boolean;
@@ -183,10 +186,26 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Backstage connection — URL is plaintext in localStorage; token is encrypted separately
   backstageConfigured: hasLiveToken(),
   backstageBaseUrl: loadBaseUrl(),
-  setBackstageConnected: (baseUrl) =>
-    set({ backstageConfigured: true, backstageBaseUrl: baseUrl, configPanelOpen: false }),
+  catalogLoading: false,
+  setBackstageConnected: async (baseUrl) => {
+    // Get the stored token
+    const token = (await loadToken()) ?? '';
+
+    set({ catalogLoading: true });
+    try {
+      // Initialize live catalog with the connection credentials
+      await initializeLiveCatalog({ baseUrl, token });
+      enableLiveCatalog();
+      set({ backstageConfigured: true, backstageBaseUrl: baseUrl, configPanelOpen: false, catalogLoading: false });
+    } catch (error) {
+      console.error('Failed to load live catalog:', error);
+      set({ catalogLoading: false });
+      throw error;
+    }
+  },
   disconnectBackstage: () => {
     clearCredentials();
+    disableLiveCatalog();
     set({ backstageConfigured: false, backstageBaseUrl: null });
   },
 

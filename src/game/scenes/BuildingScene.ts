@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { TILE_SIZE } from '../config';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
-import { getEntityByRef, getComponentOwner, entityRef as makeEntityRef } from '../../data/mock-catalog';
+import { getEntityByRef, getComponentOwner, entityRef as makeEntityRef } from '../../data/catalog-provider';
 import { generateBuildingInfo, generateBuildingNPCDialogue } from '../systems/DialogueSystem';
 import { useGameStore, type DialogueLine } from '../../store/gameStore';
 import type { Entity } from '../../data/types';

@@ -10,7 +10,7 @@ import {
   getTeamMembers,
   getTeamComponents,
   getTeamApis,
-} from '../../data/mock-catalog';
+} from '../../data/catalog-provider';
 
 // Tile indices — must match BootScene generation order
 export const TILE = {
