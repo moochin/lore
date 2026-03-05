@@ -86,6 +86,7 @@ interface GameState {
   setBackstageConnected: (baseUrl: string) => Promise<void>;
   disconnectBackstage: () => void;
   catalogLoading: boolean;
+  catalogWarnings: string[];
 
   // Config panel overlay (B key)
   configPanelOpen: boolean;
@@ -187,16 +188,23 @@ export const useGameStore = create<GameState>((set, get) => ({
   backstageConfigured: hasLiveToken(),
   backstageBaseUrl: loadBaseUrl(),
   catalogLoading: false,
+  catalogWarnings: [],
   setBackstageConnected: async (baseUrl) => {
     // Get the stored token
     const token = (await loadToken()) ?? '';
 
-    set({ catalogLoading: true });
+    set({ catalogLoading: true, catalogWarnings: [] });
     try {
       // Initialize live catalog with the connection credentials
-      await initializeLiveCatalog({ baseUrl, token });
+      const result = await initializeLiveCatalog({ baseUrl, token });
       enableLiveCatalog();
-      set({ backstageConfigured: true, backstageBaseUrl: baseUrl, configPanelOpen: false, catalogLoading: false });
+      set({
+        backstageConfigured: true,
+        backstageBaseUrl: baseUrl,
+        configPanelOpen: false,
+        catalogLoading: false,
+        catalogWarnings: result.warnings,
+      });
     } catch (error) {
       console.error('Failed to load live catalog:', error);
       set({ catalogLoading: false });
