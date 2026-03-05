@@ -6,7 +6,7 @@ import { DialogueBox } from './components/DialogueBox';
 import { DetailPanel } from './components/DetailPanel';
 import { IntroModal } from './components/IntroModal';
 import { MiniMap } from './components/MiniMap';
-import { hasLiveToken, loadBaseUrl } from './services/tokenStore';
+import { hasLiveToken, loadBaseUrl, saveCredentials } from './services/tokenStore';
 
 export default function App() {
   const configPanelOpen  = useGameStore((s) => s.configPanelOpen);
@@ -15,8 +15,25 @@ export default function App() {
   const dialogueActive   = useGameStore((s) => s.dialogueActive);
   const setBackstageConnected = useGameStore((s) => s.setBackstageConnected);
 
+  // Auto-connect via build-time env vars (VITE_BACKSTAGE_BASE_URL + VITE_BACKSTAGE_TOKEN).
+  // Takes precedence so the connection screen is never shown in pre-configured deployments.
+  useEffect(() => {
+    const envUrl   = import.meta.env.VITE_BACKSTAGE_BASE_URL as string | undefined;
+    const envToken = import.meta.env.VITE_BACKSTAGE_TOKEN   as string | undefined;
+    if (!envUrl || !envToken) return;
+
+    saveCredentials(envUrl, envToken)
+      .then(() => setBackstageConnected(envUrl))
+      .catch((err) => {
+        console.error('Env-var auto-connect failed:', err);
+        useGameStore.getState().openConfigPanel();
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Auto-initialize live catalog if user has saved credentials
   useEffect(() => {
+    if (import.meta.env.VITE_BACKSTAGE_BASE_URL && import.meta.env.VITE_BACKSTAGE_TOKEN) return;
     if (hasLiveToken()) {
       const baseUrl = loadBaseUrl();
       if (baseUrl) {
