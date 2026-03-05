@@ -17,7 +17,7 @@
 
 Struggling to get engagement with your shiny new backstage instance? Want to drive more engagement? Want to encourage teams to keep it up to date?
 
-**What if you could turn your backstage into an exporable world...**
+**What if you could turn your backstage into an explorable world...**
 
 LORE transforms your software catalog into a living, breathing 16-bit RPG world. Teams become villages. Services become buildings. Your colleagues become NPCs with real things to say about the systems they've built. And you — you're the adventurer walking between it all, piecing together how your organisation actually works.
 
