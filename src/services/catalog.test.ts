@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { CatalogClient, CatalogError } from './catalog';
 import type { Entity } from '../data/types';
 
