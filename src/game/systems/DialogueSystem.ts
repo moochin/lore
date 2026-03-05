@@ -1,5 +1,5 @@
 import { Entity } from '../../data/types';
-import { entityRef, getEntityByRef, getApiOwnerTeam } from '../../data/mock-catalog';
+import { entityRef, getEntityByRef, getApiOwnerTeam } from '../../data/catalog-provider';
 
 /**
  * Generates RPG-flavored dialogue lines for an NPC based on their entity data.

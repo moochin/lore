@@ -6,12 +6,26 @@ import { DialogueBox } from './components/DialogueBox';
 import { DetailPanel } from './components/DetailPanel';
 import { IntroModal } from './components/IntroModal';
 import { MiniMap } from './components/MiniMap';
+import { hasLiveToken, loadBaseUrl } from './services/tokenStore';
 
 export default function App() {
   const configPanelOpen  = useGameStore((s) => s.configPanelOpen);
   const openConfigPanel  = useGameStore((s) => s.openConfigPanel);
   const closeConfigPanel = useGameStore((s) => s.closeConfigPanel);
   const dialogueActive   = useGameStore((s) => s.dialogueActive);
+  const setBackstageConnected = useGameStore((s) => s.setBackstageConnected);
+
+  // Auto-initialize live catalog if user has saved credentials
+  useEffect(() => {
+    if (hasLiveToken()) {
+      const baseUrl = loadBaseUrl();
+      if (baseUrl) {
+        setBackstageConnected(baseUrl).catch((err) => {
+          console.error('Failed to auto-initialize live catalog:', err);
+        });
+      }
+    }
+  }, [setBackstageConnected]);
 
   // B key toggles the Backstage config panel (ignored during dialogue)
   useEffect(() => {
