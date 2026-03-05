@@ -19,7 +19,7 @@ Struggling to get engagement with your shiny new backstage instance? Want to dri
 
 **What if you could turn your backstage into an explorable world...**
 
-LORE transforms your software catalog into a living, breathing 16-bit RPG world. Teams become villages. Services become buildings. Your colleagues become NPCs with real things to say about the systems they've built. And you — you're the adventurer walking between it all, piecing together how your organisation actually works.
+LORE transforms your software catalog into a living, breathing 16-bit RPG World (OK maybe 8-bit but we will get there). Teams become villages. Services become buildings. Your colleagues become NPCs with real things to say about the systems they've built. And you — you're the adventurer walking between it all, piecing together how your organisation actually works.
 
 No combat. No grinding. Just the thrill of discovery.
 
