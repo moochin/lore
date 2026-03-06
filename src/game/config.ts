@@ -3,7 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { BuildingScene } from './scenes/BuildingScene';
 
-export const TILE_SIZE = 16;
+export const TILE_SIZE = 32;
 export const GAME_WIDTH = 800;
 export const GAME_HEIGHT = 600;
 

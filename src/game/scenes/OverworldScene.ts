@@ -191,7 +191,7 @@ export class OverworldScene extends Phaser.Scene {
     // Building name label
     const label = this.add.text(
       bx + TILE_SIZE * 1.5,
-      by - 2,
+      by - 2 * (TILE_SIZE / 16),
       building.name,
       {
         fontSize: '10px',
@@ -207,7 +207,7 @@ export class OverworldScene extends Phaser.Scene {
     // Entry zone
     const zone = this.add.zone(
       bx + TILE_SIZE * 1.5,
-      by + TILE_SIZE * 3 + 4,
+      by + TILE_SIZE * 3 + TILE_SIZE * 0.25,
       TILE_SIZE * 2,
       TILE_SIZE,
     );
@@ -320,8 +320,8 @@ export class OverworldScene extends Phaser.Scene {
         this.nearTarget.type === 'npc' ? 'Press E to talk' : 'Press E to enter';
       this.interactHint.setText(hintText);
       this.interactHint.setPosition(
-        this.player.sprite.x - 30,
-        this.player.sprite.y - 20,
+        this.player.sprite.x - 30 * (TILE_SIZE / 16),
+        this.player.sprite.y - 20 * (TILE_SIZE / 16),
       );
       this.interactHint.setVisible(true);
 
