@@ -10,9 +10,6 @@ const NPC_PALETTES = [
   { body: '#884433', hair: '#d4d4d4', skin: '#e8b88a' },
 ];
 
-// Scale factor relative to original 16px design
-const S = TILE_SIZE / 16;
-
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
@@ -29,6 +26,7 @@ export class BootScene extends Phaser.Scene {
 
   private generateTileset() {
     const T = TILE_SIZE;
+    const S = T / 16;
 
     // Grass tile (index 0)
     const grass = this.textures.createCanvas('tile_grass', T, T)!;
@@ -250,6 +248,7 @@ export class BootScene extends Phaser.Scene {
     hairColor: string,
     skinColor: string,
   ) {
+    const S = TILE_SIZE / 16;
     const walkOffset = frame === 1 ? -S : frame === 2 ? S : 0;
 
     // Body
@@ -298,6 +297,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   private generateDefaultBuilding() {
+    const S = TILE_SIZE / 16;
     const BW = TILE_SIZE * 3;
     const BH = TILE_SIZE * 3;
     const canvas = this.textures.createCanvas('building', BW, BH)!;
@@ -328,6 +328,7 @@ export class BootScene extends Phaser.Scene {
 
   // Forge-style building for services — stone walls, chimney with smoke
   private generateServiceBuilding() {
+    const S = TILE_SIZE / 16;
     const BW = TILE_SIZE * 3;
     const BH = TILE_SIZE * 3;
     const canvas = this.textures.createCanvas('building_service', BW, BH)!;
@@ -384,6 +385,7 @@ export class BootScene extends Phaser.Scene {
 
   // Tower-style building for websites — tall, peaked roof, flag
   private generateWebsiteBuilding() {
+    const S = TILE_SIZE / 16;
     const BW = TILE_SIZE * 3;
     const BH = TILE_SIZE * 3;
     const canvas = this.textures.createCanvas('building_website', BW, BH)!;
@@ -434,6 +436,7 @@ export class BootScene extends Phaser.Scene {
 
   // Library building — wide, bookshelves visible through windows
   private generateLibraryBuilding() {
+    const S = TILE_SIZE / 16;
     const BW = TILE_SIZE * 3;
     const BH = TILE_SIZE * 3;
     const canvas = this.textures.createCanvas('building_library', BW, BH)!;
@@ -487,6 +490,7 @@ export class BootScene extends Phaser.Scene {
 
   // Scroll hall / shrine for APIs — ornate, columns
   private generateApiBuilding() {
+    const S = TILE_SIZE / 16;
     const BW = TILE_SIZE * 3;
     const BH = TILE_SIZE * 3;
     const canvas = this.textures.createCanvas('building_api', BW, BH)!;
@@ -546,6 +550,7 @@ export class BootScene extends Phaser.Scene {
 
   private generateFurnitureSprites() {
     const T = TILE_SIZE;
+    const S = T / 16;
 
     // ── Shared ──
 
