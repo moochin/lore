@@ -1,7 +1,7 @@
 import { useGameStore } from '../store/gameStore';
 import { getAllTeams, entityRef } from '../data/mock-catalog';
 import { VILLAGE_POSITIONS, MAP_WIDTH, MAP_HEIGHT } from '../game/systems/MapGenerator';
-import { TILE_SIZE } from '../game/config';
+import { TILE_SIZE } from '../game/constants';
 
 const MINI_W = 192;
 const MINI_H = 160;

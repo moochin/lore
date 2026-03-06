@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../config';
+import { TILE_SIZE } from '../constants';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
 import { generateWorld, generateWorldMapData, MAP_WIDTH, MAP_HEIGHT, TILE } from '../systems/MapGenerator';

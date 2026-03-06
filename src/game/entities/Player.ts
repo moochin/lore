@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../config';
+import { TILE_SIZE } from '../constants';
 
 const SPEED = TILE_SIZE * (100 / 16);
 

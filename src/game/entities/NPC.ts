@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../config';
+import { TILE_SIZE } from '../constants';
 
 export class NPC {
   sprite: Phaser.Physics.Arcade.Sprite;

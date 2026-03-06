@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../config';
+import { TILE_SIZE } from '../constants';
 
 const NPC_PALETTES = [
   { body: '#aa3355', hair: '#2b1a0e', skin: '#f0c8a0' },

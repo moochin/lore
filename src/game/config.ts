@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { OverworldScene } from './scenes/OverworldScene';
 import { BuildingScene } from './scenes/BuildingScene';
+import { GAME_WIDTH, GAME_HEIGHT } from './constants';
 
-export const TILE_SIZE = 32;
-export const GAME_WIDTH = 800;
-export const GAME_HEIGHT = 600;
+// Re-export so existing imports from './config' keep working
+export { TILE_SIZE, GAME_WIDTH, GAME_HEIGHT } from './constants';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
