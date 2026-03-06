@@ -1,6 +1,7 @@
 import { useGameStore } from '../store/gameStore';
 import { getAllTeams, entityRef } from '../data/mock-catalog';
 import { VILLAGE_POSITIONS, MAP_WIDTH, MAP_HEIGHT } from '../game/systems/MapGenerator';
+import { TILE_SIZE } from '../game/constants';
 
 const MINI_W = 192;
 const MINI_H = 160;
@@ -14,9 +15,8 @@ export function MiniMap() {
   if (!miniMapVisible || currentScene !== 'OverworldScene') return null;
 
   const teams = getAllTeams();
-  const tileSize = 16;
-  const scaleX = MINI_W / (MAP_WIDTH * tileSize);
-  const scaleY = MINI_H / (MAP_HEIGHT * tileSize);
+  const scaleX = MINI_W / (MAP_WIDTH * TILE_SIZE);
+  const scaleY = MINI_H / (MAP_HEIGHT * TILE_SIZE);
   const playerX = playerPosition.x * scaleX;
   const playerY = playerPosition.y * scaleY;
 
@@ -41,8 +41,8 @@ export function MiniMap() {
         const ref = entityRef(team);
         const discovered = discoveredVillages.includes(ref);
         const displayName = (team.spec.profile as { displayName?: string })?.displayName ?? team.metadata.name;
-        const dotX = ((pos.x + 22) * tileSize) * scaleX;
-        const dotY = ((pos.y + 18) * tileSize) * scaleY;
+        const dotX = ((pos.x + 22) * TILE_SIZE) * scaleX;
+        const dotY = ((pos.y + 18) * TILE_SIZE) * scaleY;
 
         return (
           <div key={ref}>

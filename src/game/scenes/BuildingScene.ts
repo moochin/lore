@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../config';
+import { TILE_SIZE } from '../constants';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
 import { getEntityByRef, getComponentOwner, entityRef as makeEntityRef } from '../../data/catalog-provider';
@@ -181,7 +181,7 @@ export class BuildingScene extends Phaser.Scene {
       });
 
       // NPC name label
-      this.add.text(npcX, npcY - 12, displayName, {
+      this.add.text(npcX, npcY - 12 * (TILE_SIZE / 16), displayName, {
         fontSize: '8px',
         color: '#ffe0a0',
         backgroundColor: '#000000aa',
@@ -401,8 +401,8 @@ export class BuildingScene extends Phaser.Scene {
     // NPC interaction takes priority over exit
     if (this.nearNpc && this.interiorNpc) {
       this.npcHint.setPosition(
-        this.player.sprite.x - 30,
-        this.player.sprite.y - 20,
+        this.player.sprite.x - 30 * (TILE_SIZE / 16),
+        this.player.sprite.y - 20 * (TILE_SIZE / 16),
       );
       this.npcHint.setVisible(true);
       this.exitHint.setVisible(false);
@@ -412,8 +412,8 @@ export class BuildingScene extends Phaser.Scene {
       }
     } else if (this.nearExit) {
       this.exitHint.setPosition(
-        this.player.sprite.x - 30,
-        this.player.sprite.y - 20,
+        this.player.sprite.x - 30 * (TILE_SIZE / 16),
+        this.player.sprite.y - 20 * (TILE_SIZE / 16),
       );
       this.exitHint.setVisible(true);
       this.npcHint.setVisible(false);

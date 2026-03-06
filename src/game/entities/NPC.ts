@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE } from '../config';
+import { TILE_SIZE } from '../constants';
 
 export class NPC {
   sprite: Phaser.Physics.Arcade.Sprite;
@@ -21,8 +21,9 @@ export class NPC {
     this.displayName = displayName;
 
     this.sprite = scene.physics.add.sprite(x, y, textureKey, 0);
-    this.sprite.setSize(TILE_SIZE - 4, TILE_SIZE - 4);
-    this.sprite.setOffset(2, 2);
+    const margin = Math.round(TILE_SIZE * 0.25);
+    this.sprite.setSize(TILE_SIZE - margin, TILE_SIZE - margin);
+    this.sprite.setOffset(margin / 2, margin / 2);
     this.sprite.setImmovable(true);
     this.sprite.setDepth(y);
 
