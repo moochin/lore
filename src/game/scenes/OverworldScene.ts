@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { TILE_SIZE } from '../constants';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
-import { generateWorld, generateWorldMapData, MAP_WIDTH, MAP_HEIGHT, TILE } from '../systems/MapGenerator';
+import { generateWorld, generateWorldMapData, MAP_WIDTH, MAP_HEIGHT, TILE, VILLAGE_BIOMES, type BiomeType } from '../systems/MapGenerator';
 import { generateNPCDialogue } from '../systems/DialogueSystem';
 import {
   getAllTeams,
@@ -32,6 +32,9 @@ export class OverworldScene extends Phaser.Scene {
 
   // Village discovery
   private villageSprites: Map<string, Phaser.GameObjects.GameObject[]> = new Map();
+
+  // Biome particles
+  private particleEmitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
   private discoveryPopup: Phaser.GameObjects.Text | null = null;
   private discoveryTimer: Phaser.Time.TimerEvent | null = null;
 
@@ -138,6 +141,14 @@ export class OverworldScene extends Phaser.Scene {
         }
       }
     }
+
+    // Biome particle emitters — one per village
+    this.particleEmitters = [];
+    this.worldState.villages.forEach((village, i) => {
+      const biome: BiomeType = VILLAGE_BIOMES[i] ?? 'plains';
+      const emitter = this.createBiomeEmitter(village.worldPosition, biome);
+      if (emitter) this.particleEmitters.push(emitter);
+    });
 
     // Camera
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
@@ -259,6 +270,107 @@ export class OverworldScene extends Phaser.Scene {
     });
 
     return npc;
+  }
+
+  private createBiomeEmitter(
+    worldPos: { x: number; y: number },
+    biome: BiomeType,
+  ): Phaser.GameObjects.Particles.ParticleEmitter | null {
+    // Village centre in world pixels
+    const cx = (worldPos.x + 22) * TILE_SIZE;
+    const cy = (worldPos.y + 18) * TILE_SIZE;
+    const halfW = 22 * TILE_SIZE;
+    const halfH = 18 * TILE_SIZE;
+
+    const zone = new Phaser.Geom.Rectangle(-halfW, -halfH, halfW * 2, halfH * 2);
+
+    const configs: Record<BiomeType, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
+      forest: {
+        emitZone: { type: 'random', source: zone },
+        lifespan: 4000,
+        speedX: { min: -10, max: 10 },
+        speedY: { min: 15, max: 35 },
+        gravityY: 5,
+        quantity: 1,
+        frequency: 700,
+        alpha: { start: 0.8, end: 0 },
+        scale: { start: 1, end: 0.6 },
+        maxParticles: 0,
+      },
+      rocky: {
+        emitZone: { type: 'random', source: zone },
+        lifespan: 5000,
+        speedX: { min: -5, max: 5 },
+        speedY: { min: 10, max: 25 },
+        gravityY: 3,
+        quantity: 1,
+        frequency: 600,
+        alpha: { start: 0.7, end: 0 },
+        scale: { start: 1, end: 0.5 },
+        maxParticles: 0,
+      },
+      swamp: {
+        emitZone: { type: 'random', source: zone },
+        lifespan: 3500,
+        speedX: { min: -8, max: 8 },
+        speedY: { min: -8, max: 8 },
+        gravityY: -2,
+        quantity: 1,
+        frequency: 900,
+        alpha: { start: 0.3, end: 0.9 },
+        scale: { start: 0.8, end: 1.2 },
+        maxParticles: 0,
+      },
+      desert: {
+        emitZone: { type: 'random', source: zone },
+        lifespan: 3000,
+        speedX: { min: 20, max: 45 },
+        speedY: { min: -5, max: 5 },
+        gravityY: 0,
+        quantity: 1,
+        frequency: 500,
+        alpha: { start: 0.6, end: 0 },
+        scale: { start: 1, end: 0.4 },
+        maxParticles: 0,
+      },
+      meadow: {
+        emitZone: { type: 'random', source: zone },
+        lifespan: 5000,
+        speedX: { min: -6, max: 6 },
+        speedY: { min: -20, max: -8 },
+        gravityY: -1,
+        quantity: 1,
+        frequency: 800,
+        alpha: { start: 0.6, end: 0 },
+        scale: { start: 1, end: 0.5 },
+        maxParticles: 0,
+      },
+      plains: {
+        emitZone: { type: 'random', source: zone },
+        lifespan: 4000,
+        speedX: { min: -6, max: 6 },
+        speedY: { min: -3, max: 3 },
+        gravityY: 1,
+        quantity: 1,
+        frequency: 1200,
+        alpha: { start: 0.4, end: 0 },
+        scale: { start: 0.8, end: 0.3 },
+        maxParticles: 0,
+      },
+    };
+
+    const textureMap: Record<BiomeType, string> = {
+      forest: 'particle_leaf',
+      rocky:  'particle_snow',
+      swamp:  'particle_firefly',
+      desert: 'particle_sand',
+      meadow: 'particle_pollen',
+      plains: 'particle_dust',
+    };
+
+    const emitter = this.add.particles(cx, cy, textureMap[biome], configs[biome]);
+    emitter.setDepth(500);
+    return emitter;
   }
 
   private inferEntityKind(entityRef: string): string {

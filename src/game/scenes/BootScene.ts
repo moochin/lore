@@ -22,6 +22,7 @@ export class BootScene extends Phaser.Scene {
     this.generateFurnitureSprites();
     this.generateNPCSprites();
     this.generateEmoteSprites();
+    this.generateParticleTextures();
     this.scene.start('OverworldScene');
   }
 
@@ -1013,5 +1014,66 @@ export class BootScene extends Phaser.Scene {
     crCtx.fillStyle = '#66aaff';
     crCtx.fillRect(6 * S, 4 * S, 2 * S, 2 * S); // highlight
     cr.refresh();
+  }
+
+  // ── Particle Textures ────────────────────────────────────────
+
+  private generateParticleTextures() {
+    // Leaf (forest) — 6x6 green/brown shape
+    const leaf = this.textures.createCanvas('particle_leaf', 6, 6)!;
+    const lctx = leaf.getContext();
+    lctx.fillStyle = '#5a9c3a';
+    lctx.fillRect(1, 0, 4, 2);
+    lctx.fillRect(0, 2, 6, 2);
+    lctx.fillRect(1, 4, 3, 1);
+    lctx.fillStyle = '#7ab84e';
+    lctx.fillRect(2, 1, 2, 1);
+    leaf.refresh();
+
+    // Sand wisp (desert) — 5x3 horizontal streak
+    const sand = this.textures.createCanvas('particle_sand', 5, 3)!;
+    const sctx = sand.getContext();
+    sctx.fillStyle = '#c4a882';
+    sctx.fillRect(0, 1, 5, 1);
+    sctx.fillStyle = '#d4b892';
+    sctx.fillRect(1, 1, 3, 1);
+    sand.refresh();
+
+    // Firefly (swamp) — 4x4 glow dot
+    const firefly = this.textures.createCanvas('particle_firefly', 4, 4)!;
+    const fctx = firefly.getContext();
+    fctx.fillStyle = '#aadd44';
+    fctx.fillRect(1, 1, 2, 2);
+    fctx.fillStyle = '#ccff66';
+    fctx.fillRect(1, 1, 1, 1); // bright center
+    firefly.refresh();
+
+    // Snowflake (rocky) — 5x5 cross shape
+    const snow = this.textures.createCanvas('particle_snow', 5, 5)!;
+    const nctx = snow.getContext();
+    nctx.fillStyle = '#ddeeff';
+    nctx.fillRect(2, 0, 1, 5); // vertical
+    nctx.fillRect(0, 2, 5, 1); // horizontal
+    nctx.fillStyle = '#ffffff';
+    nctx.fillRect(2, 2, 1, 1); // center
+    snow.refresh();
+
+    // Pollen/seed (meadow) — 4x4 soft wisp
+    const pollen = this.textures.createCanvas('particle_pollen', 4, 4)!;
+    const pctx = pollen.getContext();
+    pctx.fillStyle = '#ffffcc';
+    pctx.fillRect(1, 0, 2, 4);
+    pctx.fillRect(0, 1, 4, 2);
+    pctx.fillStyle = '#ffffff';
+    pctx.fillRect(1, 1, 2, 2);
+    pollen.refresh();
+
+    // Dust mote (plains) — 3x3 speck
+    const dust = this.textures.createCanvas('particle_dust', 3, 3)!;
+    const dctx = dust.getContext();
+    dctx.fillStyle = '#c8b898';
+    dctx.fillRect(0, 1, 3, 1);
+    dctx.fillRect(1, 0, 1, 3);
+    dust.refresh();
   }
 }
