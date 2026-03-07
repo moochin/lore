@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { TILE_SIZE } from '../constants';
 import { Player } from '../entities/Player';
 import { NPC } from '../entities/NPC';
-import { generateWorld, generateWorldMapData, MAP_WIDTH, MAP_HEIGHT, TILE } from '../systems/MapGenerator';
+import { generateWorld, generateWorldMapData, MAP_WIDTH, MAP_HEIGHT, TILE, VILLAGE_BIOMES, type BiomeType } from '../systems/MapGenerator';
 import { generateNPCDialogue } from '../systems/DialogueSystem';
 import {
   getAllTeams,
@@ -32,8 +32,14 @@ export class OverworldScene extends Phaser.Scene {
 
   // Village discovery
   private villageSprites: Map<string, Phaser.GameObjects.GameObject[]> = new Map();
+
+  // Biome particles
+  private particleEmitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
   private discoveryPopup: Phaser.GameObjects.Text | null = null;
   private discoveryTimer: Phaser.Time.TimerEvent | null = null;
+
+  // Water animation
+  private waterFrame = 0;
 
   constructor() {
     super({ key: 'OverworldScene' });
@@ -139,9 +145,34 @@ export class OverworldScene extends Phaser.Scene {
       }
     }
 
+    // Biome particle emitters — one per village
+    this.particleEmitters = [];
+    this.worldState.villages.forEach((village, i) => {
+      const biome: BiomeType = VILLAGE_BIOMES[i] ?? 'plains';
+      const emitter = this.createBiomeEmitter(village.worldPosition, biome);
+      if (emitter) this.particleEmitters.push(emitter);
+    });
+
     // Camera
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
+
+    // Animated water — cycle tile_water canvas every 500ms
+    this.waterFrame = 0;
+    this.time.addEvent({
+      delay: 500,
+      loop: true,
+      callback: () => {
+        this.waterFrame = (this.waterFrame + 1) % 3;
+        const srcKey = `tile_water_${this.waterFrame}`;
+        const src = this.textures.get(srcKey).getSourceImage() as HTMLCanvasElement;
+        const dest = this.textures.get('tile_water') as Phaser.Textures.CanvasTexture;
+        const dctx = dest.getContext();
+        dctx.clearRect(0, 0, src.width, src.height);
+        dctx.drawImage(src, 0, 0);
+        dest.refresh();
+      },
+    });
 
     // Interact hint
     this.interactHint = this.add.text(0, 0, '', {
@@ -244,7 +275,10 @@ export class OverworldScene extends Phaser.Scene {
     const py = npcState.position.y * TILE_SIZE + TILE_SIZE / 2;
     const textureKey = `npc_${npcState.spriteIndex % 6}`;
 
-    const npc = new NPC(this, px, py, textureKey, npcState.entityRef, npcState.name);
+    // Determine entity kind for emote selection
+    const entityKind = this.inferEntityKind(npcState.entityRef);
+
+    const npc = new NPC(this, px, py, textureKey, npcState.entityRef, npcState.name, true, entityKind);
     this.npcs.push(npc);
 
     this.physics.add.collider(this.player.sprite, npc.sprite);
@@ -256,6 +290,126 @@ export class OverworldScene extends Phaser.Scene {
     });
 
     return npc;
+  }
+
+  private createBiomeEmitter(
+    worldPos: { x: number; y: number },
+    biome: BiomeType,
+  ): Phaser.GameObjects.Particles.ParticleEmitter | null {
+    // Village centre in world pixels
+    const cx = (worldPos.x + 22) * TILE_SIZE;
+    const cy = (worldPos.y + 18) * TILE_SIZE;
+    const halfW = 22 * TILE_SIZE;
+    const halfH = 18 * TILE_SIZE;
+
+    // Common emitZone covering village area
+    const emitZone = {
+      type: 'random' as const,
+      source: {
+        getRandomPoint: (point: Phaser.Types.Math.Vector2Like) => {
+          point.x = (Math.random() - 0.5) * halfW * 2;
+          point.y = (Math.random() - 0.5) * halfH * 2;
+          return point;
+        },
+      },
+    };
+
+    const configs: Record<BiomeType, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
+      forest: {
+        emitZone,
+        lifespan: 4000,
+        speedX: { min: -15, max: 15 },
+        speedY: { min: 15, max: 40 },
+        gravityY: 8,
+        quantity: 2,
+        frequency: 300,
+        alpha: { start: 0.9, end: 0 },
+        scale: { start: 3, end: 1.5 },
+      },
+      rocky: {
+        emitZone,
+        lifespan: 5000,
+        speedX: { min: -8, max: 8 },
+        speedY: { min: 12, max: 30 },
+        gravityY: 5,
+        quantity: 2,
+        frequency: 350,
+        alpha: { start: 0.9, end: 0 },
+        scale: { start: 2.5, end: 1 },
+      },
+      swamp: {
+        emitZone,
+        lifespan: 4000,
+        speedX: { min: -10, max: 10 },
+        speedY: { min: -10, max: 10 },
+        gravityY: -3,
+        quantity: 2,
+        frequency: 400,
+        alpha: { start: 0.5, end: 1 },
+        scale: { start: 2, end: 3 },
+      },
+      desert: {
+        emitZone,
+        lifespan: 3000,
+        speedX: { min: 25, max: 55 },
+        speedY: { min: -8, max: 8 },
+        gravityY: 0,
+        quantity: 2,
+        frequency: 250,
+        alpha: { start: 0.8, end: 0 },
+        scale: { start: 3, end: 1 },
+      },
+      meadow: {
+        emitZone,
+        lifespan: 5000,
+        speedX: { min: -10, max: 10 },
+        speedY: { min: -25, max: -10 },
+        gravityY: -2,
+        quantity: 2,
+        frequency: 350,
+        alpha: { start: 0.8, end: 0 },
+        scale: { start: 2.5, end: 1 },
+      },
+      plains: {
+        emitZone,
+        lifespan: 4000,
+        speedX: { min: -8, max: 8 },
+        speedY: { min: -5, max: 5 },
+        gravityY: 2,
+        quantity: 1,
+        frequency: 500,
+        alpha: { start: 0.6, end: 0 },
+        scale: { start: 2, end: 1 },
+      },
+    };
+
+    const textureMap: Record<BiomeType, string> = {
+      forest: 'particle_leaf',
+      rocky:  'particle_snow',
+      swamp:  'particle_firefly',
+      desert: 'particle_sand',
+      meadow: 'particle_pollen',
+      plains: 'particle_dust',
+    };
+
+    const emitter = this.add.particles(cx, cy, textureMap[biome], configs[biome]);
+    emitter.setDepth(9000);
+    emitter.start();
+    return emitter;
+  }
+
+  private inferEntityKind(entityRef: string): string {
+    const entity = getEntityByRef(entityRef);
+    if (!entity) return 'default';
+    const ownedRef = entity.relations?.find((r) => r.type === 'ownerOf')?.targetRef;
+    if (!ownedRef) return 'default';
+    if (ownedRef.startsWith('api:')) return 'api';
+    const owned = getEntityByRef(ownedRef);
+    if (!owned) return 'service';
+    const specType = (owned.spec.type as string) ?? 'service';
+    if (specType === 'website') return 'website';
+    if (specType === 'library') return 'library';
+    return 'service';
   }
 
   update(_time: number) {
@@ -309,8 +463,14 @@ export class OverworldScene extends Phaser.Scene {
     // Normal movement
     this.player.update();
 
-    // Update NPCs
+    // Update NPCs — set proximity flag and update behavior
+    const playerX = this.player.sprite.x;
+    const playerY = this.player.sprite.y;
+    const proximityDist = TILE_SIZE * 3;
     for (const npc of this.npcs) {
+      const dx = npc.sprite.x - playerX;
+      const dy = npc.sprite.y - playerY;
+      npc.playerNearby = Math.sqrt(dx * dx + dy * dy) < proximityDist;
       npc.update(_time);
     }
 

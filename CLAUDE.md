@@ -46,29 +46,29 @@ The two rendering systems are decoupled via **Zustand store** (`src/gameStore.ts
 BootScene  →  OverworldScene  ↔  BuildingScene
 ```
 
-- **BootScene** (`src/BootScene.ts`): Procedurally generates ALL visual assets at startup using Canvas 2D — player sprites, tile textures, building art, NPC sprites, furniture. Zero external image files.
-- **OverworldScene** (`src/OverworldScene.ts`): 240×200 tile world map with 6 guild villages, roads, biomes, NPC/building interaction zones, transitions into buildings.
-- **BuildingScene** (`src/BuildingScene.ts`): 20×14 interior room scenes themed by entity kind (service/website/library/api), with furniture and NPCs.
+- **BootScene** (`src/game/scenes/BootScene.ts`): Procedurally generates ALL visual assets at startup using Canvas 2D — player sprites, tile textures, building art, NPC sprites (12-frame walk cycles), furniture, emote bubbles. Zero external image files.
+- **OverworldScene** (`src/game/scenes/OverworldScene.ts`): 240×200 tile world map with 6 guild villages, roads, biomes, NPC/building interaction zones, transitions into buildings. NPCs wander and show emote bubbles.
+- **BuildingScene** (`src/game/scenes/BuildingScene.ts`): 20×14 interior room scenes themed by entity kind (service/website/library/api), with furniture and NPCs.
 
 ### Data Layer
 
 ```
 Backstage Catalog API
        ↓
- catalog.ts (REST client, cursor pagination)
+ src/services/catalog.ts (REST client, cursor pagination)
        ↓
- live-catalog.ts (cache + normalization)
+ src/services/live-catalog.ts (cache + normalization)
        ↓
- catalog-provider.ts (mock/live adapter — single import point)
+ src/data/catalog-provider.ts (mock/live adapter — single import point)
        ↓
  MapGenerator.ts → OverworldScene / BuildingScene
 ```
 
-- **Always import catalog data via `catalog-provider.ts`**, never directly from `catalog.ts` or `mock-catalog.ts`
-- `mock-catalog.ts` has 6 teams, 21 users, 18 components, 7 APIs for offline/demo use
+- **Always import catalog data via `src/data/catalog-provider.ts`**, never directly from `catalog.ts` or `mock-catalog.ts`
+- `src/data/mock-catalog.ts` has 6 teams, 21 users, 18 components, 7 APIs for offline/demo use
 - Live mode activates when Backstage URL + token are set via the **B** key connection screen
 
-### State Management (`src/gameStore.ts`)
+### State Management (`src/store/gameStore.ts`)
 
 The Zustand store is the single source of truth for:
 - UI overlay visibility (dialogue, detail panel, mini-map, intro modal, connection screen)
@@ -78,7 +78,7 @@ The Zustand store is the single source of truth for:
 
 Persist keys in localStorage: `lore-unlocks`, `lore-villages`, `lore-intro-shown`
 
-### Security (`src/tokenStore.ts`)
+### Security (`src/services/tokenStore.ts`)
 
 Backstage tokens are encrypted with **AES-256-GCM** (Web Crypto API):
 - Encryption key stored in `sessionStorage` (ephemeral — cleared on tab close)
@@ -94,9 +94,6 @@ Backstage tokens are encrypted with **AES-256-GCM** (Web Crypto API):
 ├── src/
 │   ├── main.tsx              # React entry point
 │   ├── App.tsx               # Root component — wires all UI overlays
-│   ├── config.ts             # Phaser game config (800×600, tile 16px, arcade physics)
-│   ├── types.ts              # Backstage entity TypeScript interfaces
-│   ├── gameStore.ts          # Zustand store (central state)
 │   │
 │   ├── components/
 │   │   ├── GameContainer.tsx # Phaser canvas mount
@@ -106,26 +103,36 @@ Backstage tokens are encrypted with **AES-256-GCM** (Web Crypto API):
 │   │   ├── IntroModal.tsx    # First-launch modal
 │   │   └── ConnectionScreen.tsx  # Backstage URL+token entry
 │   │
-│   ├── scenes/
-│   │   ├── BootScene.ts      # Procedural asset generation
-│   │   ├── OverworldScene.ts # Main world map scene
-│   │   └── BuildingScene.ts  # Interior room scenes
+│   ├── data/
+│   │   ├── catalog-provider.ts  # SINGLE import point for catalog data
+│   │   ├── mock-catalog.ts      # Offline/demo mock data
+│   │   └── types.ts             # Backstage entity TypeScript interfaces
 │   │
-│   ├── entities/
-│   │   ├── Player.ts         # Player sprite + WASD movement
-│   │   └── NPC.ts            # NPC sprite + idle behavior
+│   ├── game/
+│   │   ├── config.ts         # Phaser game config (800×600, tile 32px, arcade physics)
+│   │   ├── constants.ts      # TILE_SIZE, GAME_WIDTH, GAME_HEIGHT
+│   │   │
+│   │   ├── entities/
+│   │   │   ├── Player.ts     # Player sprite + WASD movement
+│   │   │   └── NPC.ts        # NPC sprite + wandering AI + emote bubbles
+│   │   │
+│   │   ├── scenes/
+│   │   │   ├── BootScene.ts      # Procedural asset generation (sprites, tiles, emotes)
+│   │   │   ├── OverworldScene.ts # Main world map scene
+│   │   │   └── BuildingScene.ts  # Interior room scenes
+│   │   │
+│   │   └── systems/
+│   │       ├── MapGenerator.ts   # Catalog → world map conversion
+│   │       ├── DialogueSystem.ts # RPG dialogue generation from entity metadata
+│   │       └── UnlockSystem.ts   # Entity unlock tracking
 │   │
-│   ├── systems/
-│   │   ├── MapGenerator.ts   # Catalog → world map conversion
-│   │   ├── DialogueSystem.ts # RPG dialogue generation from entity metadata
-│   │   └── UnlockSystem.ts   # Entity unlock tracking
+│   ├── services/
+│   │   ├── catalog.ts        # Backstage REST API client
+│   │   ├── live-catalog.ts   # Live data cache/adapter
+│   │   └── tokenStore.ts     # Encrypted token persistence
 │   │
-│   └── services/
-│       ├── catalog-provider.ts  # SINGLE import point for catalog data
-│       ├── catalog.ts           # Backstage REST API client
-│       ├── live-catalog.ts      # Live data cache/adapter
-│       ├── mock-catalog.ts      # Offline/demo mock data
-│       └── tokenStore.ts        # Encrypted token persistence
+│   └── store/
+│       └── gameStore.ts      # Zustand store (central state)
 │
 ├── src/**/*.test.ts          # Co-located tests (Vitest)
 ├── examples/backstage/       # Example Backstage catalog data
@@ -143,7 +150,7 @@ Backstage tokens are encrypted with **AES-256-GCM** (Web Crypto API):
 ### TypeScript
 
 - **Strict mode is mandatory** — `strict: true`, `noUnusedLocals: true`, `noUnusedParameters: true`. The build (`tsc -b`) will fail on violations.
-- Use interfaces from `src/types.ts` for all Backstage entity shapes (`Entity`, `Relation`, `EntityKind`, etc.)
+- Use interfaces from `src/data/types.ts` for all Backstage entity shapes (`Entity`, `Relation`, `EntityKind`, etc.)
 - Entity references follow Backstage format: `kind:namespace/name` (e.g., `component:default/auth-service`, `user:default/alice-chen`)
 
 ### Naming
@@ -164,19 +171,20 @@ Backstage tokens are encrypted with **AES-256-GCM** (Web Crypto API):
 
 ### Phaser Scenes
 
-- Tile size is **16px** (constant `TILE_SIZE` from `config.ts`)
-- Overworld map is **240×200 tiles** (3840×3200 pixels)
+- Tile size is **32px** (constant `TILE_SIZE` from `src/game/constants.ts`)
+- Overworld map is **240×200 tiles** (7680×6400 pixels)
 - Building interiors are **20×14 tiles**
 - Use Y coordinate as depth for natural sprite layering: `sprite.setDepth(sprite.y)`
 - Scene transitions use 300–400ms fade in/out
 - Interaction zones use Phaser `Zone` objects (not physics bodies) for building entry and NPC proximity
+- NPC walk animations are registered per texture key (e.g. `npc_0_down`) — check `anims.exists()` before creating to avoid duplicate registration across scenes
 
 ### Map Generation
 
-- Teams → Villages (6 biomes: forest, desert, tundra, swamp, mountain, plains)
+- Teams → Villages (6 biomes: forest, rocky, swamp, desert, meadow, plains)
 - Components/APIs → Buildings within their owning team's village
-- Users → NPCs inside buildings
-- All terrain, buildings, and furniture are procedurally drawn in `BootScene.ts` using Canvas 2D; do not import image files
+- Users → NPCs inside buildings (overworld NPCs wander; interior NPCs are stationary)
+- All terrain, buildings, furniture, and emote bubbles are procedurally drawn in `BootScene.ts` using Canvas 2D; do not import image files
 
 ### Dialogue
 
@@ -196,10 +204,10 @@ npm run test:watch    # Watch mode
 ```
 
 Key test files:
-- `src/gameStore.test.ts` — ~161 tests; covers all store actions, UI state transitions, persistence
-- `src/systems/DialogueSystem.test.ts` — Dialogue generation for various entity types
-- `src/systems/MapGenerator.test.ts` — Village/building/NPC placement logic
-- `src/services/catalog-provider.test.ts` — Mock/live adapter switching
+- `src/store/gameStore.test.ts` — ~161 tests; covers all store actions, UI state transitions, persistence
+- `src/game/systems/DialogueSystem.test.ts` — Dialogue generation for various entity types
+- `src/game/systems/MapGenerator.test.ts` — Village/building/NPC placement logic
+- `src/data/catalog-provider.test.ts` — Mock/live adapter switching
 - `src/services/catalog.test.ts` — Backstage API client with paginated responses
 - `src/services/live-catalog.test.ts` — Live data normalization and caching
 
@@ -245,10 +253,11 @@ The Backstage URL and token are entered at runtime via the **B** key connection 
 
 ### Adding a new entity kind
 
-1. Add the kind string to the `EntityKind` type in `src/types.ts`
-2. Handle the new kind in `MapGenerator.ts` (building type, placement rules)
-3. Add dialogue templates in `DialogueSystem.ts`
-4. Add building/furniture sprites in `BootScene.ts` if needed
+1. Add the kind string to the `EntityKind` type in `src/data/types.ts`
+2. Handle the new kind in `src/game/systems/MapGenerator.ts` (building type, placement rules)
+3. Add dialogue templates in `src/game/systems/DialogueSystem.ts`
+4. Add building/furniture sprites in `src/game/scenes/BootScene.ts` if needed
+5. Add an emote key mapping in `src/game/entities/NPC.ts` (`EMOTE_KEYS` constant)
 
 ### Connecting to a live Backstage instance
 

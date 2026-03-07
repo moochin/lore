@@ -21,6 +21,8 @@ export class BootScene extends Phaser.Scene {
     this.generateBuildingSprites();
     this.generateFurnitureSprites();
     this.generateNPCSprites();
+    this.generateEmoteSprites();
+    this.generateParticleTextures();
     this.scene.start('OverworldScene');
   }
 
@@ -54,7 +56,7 @@ export class BootScene extends Phaser.Scene {
     }
     path.refresh();
 
-    // Water tile (index 2)
+    // Water tile (index 2) — base frame
     const water = this.textures.createCanvas('tile_water', T, T)!;
     const wctx = water.getContext();
     wctx.fillStyle = '#3366aa';
@@ -63,6 +65,33 @@ export class BootScene extends Phaser.Scene {
     wctx.fillRect(2 * S, 4 * S, 4 * S, S);
     wctx.fillRect(10 * S, 10 * S, 3 * S, S);
     water.refresh();
+
+    // Water animation frames (shifted wave highlights)
+    // Frame 0 is a copy of the base water tile
+    const w0 = this.textures.createCanvas('tile_water_0', T, T)!;
+    const w0Ctx = w0.getContext();
+    w0Ctx.fillStyle = '#3366aa';
+    w0Ctx.fillRect(0, 0, T, T);
+    w0Ctx.fillStyle = '#4477bb';
+    w0Ctx.fillRect(2 * S, 4 * S, 4 * S, S);
+    w0Ctx.fillRect(10 * S, 10 * S, 3 * S, S);
+    w0.refresh();
+
+    for (let f = 1; f <= 2; f++) {
+      const wf = this.textures.createCanvas(`tile_water_${f}`, T, T)!;
+      const wfCtx = wf.getContext();
+      wfCtx.fillStyle = '#3366aa';
+      wfCtx.fillRect(0, 0, T, T);
+      wfCtx.fillStyle = '#4477bb';
+      // Shift wave lines by f*4 sub-pixels, wrapping around
+      const off = f * 4 * S;
+      wfCtx.fillRect(((2 * S + off) % T), 4 * S, 4 * S, S);
+      wfCtx.fillRect(((10 * S + off) % T), 10 * S, 3 * S, S);
+      // Extra shimmer highlight
+      wfCtx.fillStyle = '#5588cc';
+      wfCtx.fillRect(((6 * S + off) % T), (7 + f * 2) * S, 3 * S, S);
+      wf.refresh();
+    }
 
     // Wall tile (index 3)
     const wall = this.textures.createCanvas('tile_wall', T, T)!;
@@ -218,23 +247,28 @@ export class BootScene extends Phaser.Scene {
   private generateNPCSprites() {
     const T = TILE_SIZE;
     const directions = ['down', 'left', 'right', 'up'];
+    const frameCount = 3;
 
     NPC_PALETTES.forEach((palette, index) => {
       const key = `npc_${index}`;
-      const sw = T * directions.length;
-      const sh = T;
+      const sw = T * frameCount;
+      const sh = T * directions.length;
       const canvas = this.textures.createCanvas(key, sw, sh)!;
       const ctx = canvas.getContext();
 
-      directions.forEach((dir, col) => {
-        this.drawCharacter(ctx, col * T, 0, dir, 0, palette.body, palette.hair, palette.skin);
+      directions.forEach((dir, row) => {
+        for (let frame = 0; frame < frameCount; frame++) {
+          this.drawCharacter(ctx, frame * T, row * T, dir, frame, palette.body, palette.hair, palette.skin);
+        }
       });
 
       canvas.refresh();
 
-      for (let i = 0; i < directions.length; i++) {
-        this.textures.get(key).add(i, 0, i * T, 0, T, T);
-      }
+      directions.forEach((_dir, row) => {
+        for (let i = 0; i < frameCount; i++) {
+          this.textures.get(key).add(row * frameCount + i, 0, i * T, row * T, T, T);
+        }
+      });
     });
   }
 
@@ -599,6 +633,17 @@ export class BootScene extends Phaser.Scene {
     caCtx.fillRect(7 * S, 3 * S, 2 * S, S); // flame tip
     candle.refresh();
 
+    // Candle flame overlay (flame pixels only, for flicker animation)
+    const cflame = this.textures.createCanvas('furn_candle_flame', T, T)!;
+    const cfCtx = cflame.getContext();
+    cfCtx.fillStyle = '#ffaa22';
+    cfCtx.fillRect(7 * S, 3 * S, 2 * S, 3 * S); // flame body
+    cfCtx.fillStyle = '#ffdd44';
+    cfCtx.fillRect(7 * S, 4 * S, 2 * S, S); // flame bright
+    cfCtx.fillStyle = '#ff6600';
+    cfCtx.fillRect(7 * S, 3 * S, 2 * S, S); // flame tip
+    cflame.refresh();
+
     // ── Forge theme ──
 
     // Anvil
@@ -640,6 +685,17 @@ export class BootScene extends Phaser.Scene {
     fpCtx.fillStyle = '#6b4a2a';
     fpCtx.fillRect(5 * S, 22 * S, 6 * S, 3 * S);
     fp.refresh();
+
+    // Fireplace flame overlay (fire pixels only, for flicker animation)
+    const fpFlame = this.textures.createCanvas('furn_fireplace_flame', T, T * 2)!;
+    const fpfCtx = fpFlame.getContext();
+    fpfCtx.fillStyle = '#ff4400';
+    fpfCtx.fillRect(4 * S, 16 * S, 8 * S, 8 * S);
+    fpfCtx.fillStyle = '#ff8833';
+    fpfCtx.fillRect(5 * S, 14 * S, 6 * S, 6 * S);
+    fpfCtx.fillStyle = '#ffcc22';
+    fpfCtx.fillRect(6 * S, 12 * S, 4 * S, 5 * S);
+    fpFlame.refresh();
 
     // Workbench (2 wide, 1 tall)
     const wb = this.textures.createCanvas('furn_workbench', T * 2, T)!;
@@ -916,5 +972,157 @@ export class BootScene extends Phaser.Scene {
     rcCtx.fillStyle = '#aaeeff';
     rcCtx.fillRect(15 * S, 15 * S, 2 * S, 2 * S);
     rc.refresh();
+  }
+
+  // ── Emote Bubble Sprites ─────────────────────────────────────
+
+  private generateEmoteSprites() {
+    const S = TILE_SIZE / 16;
+    const W = 14 * S;
+    const H = 16 * S;
+
+    const drawBubble = (ctx: CanvasRenderingContext2D) => {
+      // White rounded-ish bubble
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(S, 0, W - 2 * S, H - 4 * S);
+      ctx.fillRect(0, S, W, H - 6 * S);
+      // Pointer triangle at bottom
+      ctx.fillRect(5 * S, H - 4 * S, 4 * S, 2 * S);
+      ctx.fillRect(6 * S, H - 2 * S, 2 * S, 2 * S);
+      // Subtle border
+      ctx.fillStyle = '#aaaaaa';
+      ctx.fillRect(0, S, S, H - 6 * S);
+      ctx.fillRect(W - S, S, S, H - 6 * S);
+      ctx.fillRect(S, 0, W - 2 * S, S);
+      ctx.fillRect(S, H - 5 * S, W - 2 * S, S);
+    };
+
+    // Exclaim "!"
+    const ex = this.textures.createCanvas('emote_exclaim', W, H)!;
+    const exCtx = ex.getContext();
+    drawBubble(exCtx);
+    exCtx.fillStyle = '#dd3333';
+    exCtx.fillRect(6 * S, 2 * S, 2 * S, 6 * S);
+    exCtx.fillRect(6 * S, 9 * S, 2 * S, 2 * S);
+    ex.refresh();
+
+    // Thought "..."
+    const th = this.textures.createCanvas('emote_thought', W, H)!;
+    const thCtx = th.getContext();
+    drawBubble(thCtx);
+    thCtx.fillStyle = '#666666';
+    thCtx.fillRect(3 * S, 5 * S, 2 * S, 2 * S);
+    thCtx.fillRect(6 * S, 5 * S, 2 * S, 2 * S);
+    thCtx.fillRect(9 * S, 5 * S, 2 * S, 2 * S);
+    th.refresh();
+
+    // Hammer (service)
+    const hm = this.textures.createCanvas('emote_hammer', W, H)!;
+    const hmCtx = hm.getContext();
+    drawBubble(hmCtx);
+    hmCtx.fillStyle = '#888888';
+    hmCtx.fillRect(4 * S, 2 * S, 4 * S, 3 * S); // head
+    hmCtx.fillStyle = '#8b6b3e';
+    hmCtx.fillRect(6 * S, 5 * S, 2 * S, 6 * S); // handle
+    hm.refresh();
+
+    // Book (library)
+    const bk = this.textures.createCanvas('emote_book', W, H)!;
+    const bkCtx = bk.getContext();
+    drawBubble(bkCtx);
+    bkCtx.fillStyle = '#aa3333';
+    bkCtx.fillRect(3 * S, 2 * S, 8 * S, 8 * S);
+    bkCtx.fillStyle = '#eeddbb';
+    bkCtx.fillRect(4 * S, 3 * S, 6 * S, 6 * S);
+    bkCtx.fillStyle = '#444444';
+    bkCtx.fillRect(7 * S, 2 * S, S, 8 * S); // spine
+    bk.refresh();
+
+    // Scroll (API)
+    const sc = this.textures.createCanvas('emote_scroll', W, H)!;
+    const scCtx = sc.getContext();
+    drawBubble(scCtx);
+    scCtx.fillStyle = '#ddc088';
+    scCtx.fillRect(4 * S, 2 * S, 6 * S, 8 * S);
+    scCtx.fillStyle = '#8b6b3e';
+    scCtx.fillRect(3 * S, 2 * S, 8 * S, S);
+    scCtx.fillRect(3 * S, 9 * S, 8 * S, S);
+    scCtx.fillStyle = '#888888';
+    scCtx.fillRect(5 * S, 4 * S, 4 * S, S);
+    scCtx.fillRect(5 * S, 6 * S, 3 * S, S);
+    sc.refresh();
+
+    // Crystal (website)
+    const cr = this.textures.createCanvas('emote_crystal', W, H)!;
+    const crCtx = cr.getContext();
+    drawBubble(crCtx);
+    crCtx.fillStyle = '#4488ff';
+    crCtx.fillRect(6 * S, 2 * S, 2 * S, 2 * S);
+    crCtx.fillRect(5 * S, 4 * S, 4 * S, 4 * S);
+    crCtx.fillRect(6 * S, 8 * S, 2 * S, 2 * S);
+    crCtx.fillStyle = '#66aaff';
+    crCtx.fillRect(6 * S, 4 * S, 2 * S, 2 * S); // highlight
+    cr.refresh();
+  }
+
+  // ── Particle Textures ────────────────────────────────────────
+
+  private generateParticleTextures() {
+    // Leaf (forest) — 6x6 green/brown shape
+    const leaf = this.textures.createCanvas('particle_leaf', 6, 6)!;
+    const lctx = leaf.getContext();
+    lctx.fillStyle = '#5a9c3a';
+    lctx.fillRect(1, 0, 4, 2);
+    lctx.fillRect(0, 2, 6, 2);
+    lctx.fillRect(1, 4, 3, 1);
+    lctx.fillStyle = '#7ab84e';
+    lctx.fillRect(2, 1, 2, 1);
+    leaf.refresh();
+
+    // Sand wisp (desert) — 5x3 horizontal streak
+    const sand = this.textures.createCanvas('particle_sand', 5, 3)!;
+    const sctx = sand.getContext();
+    sctx.fillStyle = '#c4a882';
+    sctx.fillRect(0, 1, 5, 1);
+    sctx.fillStyle = '#d4b892';
+    sctx.fillRect(1, 1, 3, 1);
+    sand.refresh();
+
+    // Firefly (swamp) — 4x4 glow dot
+    const firefly = this.textures.createCanvas('particle_firefly', 4, 4)!;
+    const fctx = firefly.getContext();
+    fctx.fillStyle = '#aadd44';
+    fctx.fillRect(1, 1, 2, 2);
+    fctx.fillStyle = '#ccff66';
+    fctx.fillRect(1, 1, 1, 1); // bright center
+    firefly.refresh();
+
+    // Snowflake (rocky) — 5x5 cross shape
+    const snow = this.textures.createCanvas('particle_snow', 5, 5)!;
+    const nctx = snow.getContext();
+    nctx.fillStyle = '#ddeeff';
+    nctx.fillRect(2, 0, 1, 5); // vertical
+    nctx.fillRect(0, 2, 5, 1); // horizontal
+    nctx.fillStyle = '#ffffff';
+    nctx.fillRect(2, 2, 1, 1); // center
+    snow.refresh();
+
+    // Pollen/seed (meadow) — 4x4 soft wisp
+    const pollen = this.textures.createCanvas('particle_pollen', 4, 4)!;
+    const pctx = pollen.getContext();
+    pctx.fillStyle = '#ffffcc';
+    pctx.fillRect(1, 0, 2, 4);
+    pctx.fillRect(0, 1, 4, 2);
+    pctx.fillStyle = '#ffffff';
+    pctx.fillRect(1, 1, 2, 2);
+    pollen.refresh();
+
+    // Dust mote (plains) — 3x3 speck
+    const dust = this.textures.createCanvas('particle_dust', 3, 3)!;
+    const dctx = dust.getContext();
+    dctx.fillStyle = '#c8b898';
+    dctx.fillRect(0, 1, 3, 1);
+    dctx.fillRect(1, 0, 1, 3);
+    dust.refresh();
   }
 }

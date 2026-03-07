@@ -252,6 +252,39 @@ export class BuildingScene extends Phaser.Scene {
         // Walkable — render below player
         img.setDepth(1);
       }
+
+      // Flickering light effect for candles and fireplaces
+      if (piece.key === 'furn_candle' || piece.key === 'furn_fireplace') {
+        // Flame overlay — only the fire/flame pixels, placed on top
+        const flameKey = `${piece.key}_flame`;
+        const flame = this.add.image(px, py, flameKey);
+        flame.setDepth(img.depth + 1);
+
+        // Pulsing alpha on flame overlay only
+        this.tweens.add({
+          targets: flame,
+          alpha: { from: 1, to: 0.4 },
+          duration: 300 + Math.random() * 200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+
+        // Warm glow circle underneath
+        const glowRadius = piece.key === 'furn_fireplace' ? TILE_SIZE * 3 : TILE_SIZE * 1.5;
+        const glow = this.add.circle(px, py, glowRadius, 0xff8833, 0.12);
+        glow.setDepth(0);
+        this.tweens.add({
+          targets: glow,
+          alpha: { from: 0.12, to: 0.04 },
+          scaleX: { from: 1, to: 0.85 },
+          scaleY: { from: 1, to: 0.85 },
+          duration: 400 + Math.random() * 300,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
     }
   }
 
