@@ -38,6 +38,9 @@ export class OverworldScene extends Phaser.Scene {
   private discoveryPopup: Phaser.GameObjects.Text | null = null;
   private discoveryTimer: Phaser.Time.TimerEvent | null = null;
 
+  // Water animation
+  private waterFrame = 0;
+
   constructor() {
     super({ key: 'OverworldScene' });
   }
@@ -153,6 +156,23 @@ export class OverworldScene extends Phaser.Scene {
     // Camera
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
     this.cameras.main.setBounds(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
+
+    // Animated water — cycle tile_water canvas every 500ms
+    this.waterFrame = 0;
+    this.time.addEvent({
+      delay: 500,
+      loop: true,
+      callback: () => {
+        this.waterFrame = (this.waterFrame + 1) % 3;
+        const srcKey = `tile_water_${this.waterFrame}`;
+        const src = this.textures.get(srcKey).getSourceImage() as HTMLCanvasElement;
+        const dest = this.textures.get('tile_water') as Phaser.Textures.CanvasTexture;
+        const dctx = dest.getContext();
+        dctx.clearRect(0, 0, src.width, src.height);
+        dctx.drawImage(src, 0, 0);
+        dest.refresh();
+      },
+    });
 
     // Interact hint
     this.interactHint = this.add.text(0, 0, '', {

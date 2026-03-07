@@ -56,7 +56,7 @@ export class BootScene extends Phaser.Scene {
     }
     path.refresh();
 
-    // Water tile (index 2)
+    // Water tile (index 2) — base frame
     const water = this.textures.createCanvas('tile_water', T, T)!;
     const wctx = water.getContext();
     wctx.fillStyle = '#3366aa';
@@ -65,6 +65,33 @@ export class BootScene extends Phaser.Scene {
     wctx.fillRect(2 * S, 4 * S, 4 * S, S);
     wctx.fillRect(10 * S, 10 * S, 3 * S, S);
     water.refresh();
+
+    // Water animation frames (shifted wave highlights)
+    // Frame 0 is a copy of the base water tile
+    const w0 = this.textures.createCanvas('tile_water_0', T, T)!;
+    const w0Ctx = w0.getContext();
+    w0Ctx.fillStyle = '#3366aa';
+    w0Ctx.fillRect(0, 0, T, T);
+    w0Ctx.fillStyle = '#4477bb';
+    w0Ctx.fillRect(2 * S, 4 * S, 4 * S, S);
+    w0Ctx.fillRect(10 * S, 10 * S, 3 * S, S);
+    w0.refresh();
+
+    for (let f = 1; f <= 2; f++) {
+      const wf = this.textures.createCanvas(`tile_water_${f}`, T, T)!;
+      const wfCtx = wf.getContext();
+      wfCtx.fillStyle = '#3366aa';
+      wfCtx.fillRect(0, 0, T, T);
+      wfCtx.fillStyle = '#4477bb';
+      // Shift wave lines by f*4 sub-pixels, wrapping around
+      const off = f * 4 * S;
+      wfCtx.fillRect(((2 * S + off) % T), 4 * S, 4 * S, S);
+      wfCtx.fillRect(((10 * S + off) % T), 10 * S, 3 * S, S);
+      // Extra shimmer highlight
+      wfCtx.fillStyle = '#5588cc';
+      wfCtx.fillRect(((6 * S + off) % T), (7 + f * 2) * S, 3 * S, S);
+      wf.refresh();
+    }
 
     // Wall tile (index 3)
     const wall = this.textures.createCanvas('tile_wall', T, T)!;

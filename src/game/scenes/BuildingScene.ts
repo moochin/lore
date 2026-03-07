@@ -252,6 +252,34 @@ export class BuildingScene extends Phaser.Scene {
         // Walkable — render below player
         img.setDepth(1);
       }
+
+      // Flickering light effect for candles and fireplaces
+      if (piece.key === 'furn_candle' || piece.key === 'furn_fireplace') {
+        // Pulsing alpha on the furniture sprite
+        this.tweens.add({
+          targets: img,
+          alpha: { from: 1, to: 0.6 },
+          duration: 300 + Math.random() * 200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+
+        // Warm glow circle underneath
+        const glowRadius = piece.key === 'furn_fireplace' ? TILE_SIZE * 3 : TILE_SIZE * 1.5;
+        const glow = this.add.circle(px, py, glowRadius, 0xff8833, 0.12);
+        glow.setDepth(0);
+        this.tweens.add({
+          targets: glow,
+          alpha: { from: 0.12, to: 0.04 },
+          scaleX: { from: 1, to: 0.85 },
+          scaleY: { from: 1, to: 0.85 },
+          duration: 400 + Math.random() * 300,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+      }
     }
   }
 
