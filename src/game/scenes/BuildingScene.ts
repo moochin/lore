@@ -289,92 +289,134 @@ export class BuildingScene extends Phaser.Scene {
   }
 
   private renderBuildingContent() {
-    const centerX = (ROOM_WIDTH * TILE_SIZE) / 2;
+    // All HUD elements use setScrollFactor(0) so they stay fixed to the
+    // camera viewport regardless of world position.
+    const PANEL_W = 172;
+    const PANEL_X = 4;
+    const PANEL_Y = 4;
+    const TEXT_X = PANEL_X + 6;
+    const DEPTH = 2000;
 
     if (!this.componentEntity) {
+      const bg = this.add.rectangle(PANEL_X, PANEL_Y, PANEL_W, 32, 0x5a4a3a, 0.88)
+        .setOrigin(0, 0).setScrollFactor(0).setDepth(DEPTH);
+      void bg;
       this.add
-        .text(centerX, -3 * TILE_SIZE, 'An empty room.', {
+        .text(TEXT_X, PANEL_Y + 8, 'An empty room.', {
           fontSize: '10px',
           color: '#ffe0a0',
-          backgroundColor: '#5a4a3a',
-          padding: { x: 4, y: 4 },
         })
-        .setOrigin(0.5, 0)
-        .setDepth(10);
+        .setScrollFactor(0)
+        .setOrigin(0, 0)
+        .setDepth(DEPTH + 1);
       return;
     }
 
     const info = generateBuildingInfo(this.componentEntity);
-
-    // Title — centered above room
     const name = info[0] ?? this.componentEntity.metadata.name;
+    const typeLine = info[1] ?? '';
+    const descLines = info.slice(3).filter((l) => l.length > 0);
+    const tags = this.componentEntity.metadata.tags ?? [];
+
+    // Measure panel height: title + type + desc lines + tags + q-hint
+    const lineH = 14;
+    let panelH = 8 + 16 + 4; // top pad + title + gap
+    if (typeLine) panelH += lineH + 4;
+    if (descLines.length > 0) panelH += descLines.length * lineH + 8;
+    if (tags.length > 0) panelH += lineH + 4;
+    panelH += lineH + 8; // q-hint + bottom pad
+
+    // Panel background
+    const bg = this.add
+      .rectangle(PANEL_X, PANEL_Y, PANEL_W, panelH, 0x1a1408, 0.82)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH);
+    void bg;
+
+    // Left accent bar
+    const accent = this.add
+      .rectangle(PANEL_X, PANEL_Y, 3, panelH, 0xffe0a0, 1)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH + 1);
+    void accent;
+
+    let curY = PANEL_Y + 8;
+
+    // Title
     this.add
-      .text(centerX, -7 * TILE_SIZE, name, {
-        fontSize: '14px',
+      .text(TEXT_X, curY, name, {
+        fontSize: '11px',
         fontStyle: 'bold',
         color: '#ffe0a0',
-        backgroundColor: '#5a4a3a',
-        padding: { x: 8, y: 4 },
+        wordWrap: { width: PANEL_W - 12 },
       })
-      .setOrigin(0.5, 0)
-      .setDepth(10);
+      .setScrollFactor(0)
+      .setOrigin(0, 0)
+      .setDepth(DEPTH + 2);
+    curY += 16 + 4;
 
-    // Type + lifecycle line
-    if (info[1]) {
+    // Type + lifecycle
+    if (typeLine) {
       this.add
-        .text(centerX, -5.5 * TILE_SIZE, info[1], {
-          fontSize: '10px',
+        .text(TEXT_X, curY, typeLine, {
+          fontSize: '9px',
           color: '#aaccff',
-          backgroundColor: '#3a3a5a',
-          padding: { x: 4, y: 2 },
+          wordWrap: { width: PANEL_W - 12 },
         })
-        .setOrigin(0.5, 0)
-        .setDepth(10);
+        .setScrollFactor(0)
+        .setOrigin(0, 0)
+        .setDepth(DEPTH + 2);
+      curY += lineH + 4;
     }
 
-    // Description and other info
-    const descLines = info.slice(3).filter((l) => l.length > 0);
+    // Description lines
     if (descLines.length > 0) {
       this.add
-        .text(centerX, -4 * TILE_SIZE, descLines.join('\n'), {
-          fontSize: '10px',
+        .text(TEXT_X, curY, descLines.join('\n'), {
+          fontSize: '9px',
           color: '#d4c4a0',
-          backgroundColor: '#4a3a2a',
-          padding: { x: 6, y: 4 },
-          wordWrap: { width: ROOM_WIDTH * TILE_SIZE },
+          wordWrap: { width: PANEL_W - 12 },
         })
-        .setOrigin(0.5, 0)
-        .setDepth(10);
+        .setScrollFactor(0)
+        .setOrigin(0, 0)
+        .setDepth(DEPTH + 2);
+      curY += descLines.length * lineH + 8;
     }
 
     // Tags
-    const tags = this.componentEntity.metadata.tags ?? [];
     if (tags.length > 0) {
       this.add
-        .text(
-          centerX,
-          -1.5 * TILE_SIZE,
-          tags.map((t) => `[${t}]`).join(' '),
-          { fontSize: '9px', color: '#88cc88' },
-        )
-        .setOrigin(0.5, 0)
-        .setDepth(10);
+        .text(TEXT_X, curY, tags.map((t) => `[${t}]`).join(' '), {
+          fontSize: '9px',
+          color: '#88cc88',
+          wordWrap: { width: PANEL_W - 12 },
+        })
+        .setScrollFactor(0)
+        .setOrigin(0, 0)
+        .setDepth(DEPTH + 2);
+      curY += lineH + 4;
     }
 
-    // View Details hint — inside room near bottom
+    // Q-hint separator line
+    const sep = this.add
+      .rectangle(PANEL_X + 3, curY, PANEL_W - 3, 1, 0x5a4a3a, 0.7)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(DEPTH + 1);
+    void sep;
+    curY += 4;
+
+    // Q-hint
     this.add
-      .text(
-        TILE_SIZE * 2,
-        TILE_SIZE * (ROOM_HEIGHT - 3),
-        'Press Q to view full details',
-        {
-          fontSize: '10px',
-          color: '#aaaaff',
-          backgroundColor: '#2a2a4a',
-          padding: { x: 4, y: 2 },
-        },
-      )
-      .setDepth(10);
+      .text(TEXT_X, curY, 'Q — full details', {
+        fontSize: '9px',
+        color: '#aaaaff',
+      })
+      .setScrollFactor(0)
+      .setOrigin(0, 0)
+      .setDepth(DEPTH + 2);
   }
 
   update() {
