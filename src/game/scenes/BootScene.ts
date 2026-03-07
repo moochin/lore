@@ -633,6 +633,17 @@ export class BootScene extends Phaser.Scene {
     caCtx.fillRect(7 * S, 3 * S, 2 * S, S); // flame tip
     candle.refresh();
 
+    // Candle flame overlay (flame pixels only, for flicker animation)
+    const cflame = this.textures.createCanvas('furn_candle_flame', T, T)!;
+    const cfCtx = cflame.getContext();
+    cfCtx.fillStyle = '#ffaa22';
+    cfCtx.fillRect(7 * S, 3 * S, 2 * S, 3 * S); // flame body
+    cfCtx.fillStyle = '#ffdd44';
+    cfCtx.fillRect(7 * S, 4 * S, 2 * S, S); // flame bright
+    cfCtx.fillStyle = '#ff6600';
+    cfCtx.fillRect(7 * S, 3 * S, 2 * S, S); // flame tip
+    cflame.refresh();
+
     // ── Forge theme ──
 
     // Anvil
@@ -674,6 +685,17 @@ export class BootScene extends Phaser.Scene {
     fpCtx.fillStyle = '#6b4a2a';
     fpCtx.fillRect(5 * S, 22 * S, 6 * S, 3 * S);
     fp.refresh();
+
+    // Fireplace flame overlay (fire pixels only, for flicker animation)
+    const fpFlame = this.textures.createCanvas('furn_fireplace_flame', T, T * 2)!;
+    const fpfCtx = fpFlame.getContext();
+    fpfCtx.fillStyle = '#ff4400';
+    fpfCtx.fillRect(4 * S, 16 * S, 8 * S, 8 * S);
+    fpfCtx.fillStyle = '#ff8833';
+    fpfCtx.fillRect(5 * S, 14 * S, 6 * S, 6 * S);
+    fpfCtx.fillStyle = '#ffcc22';
+    fpfCtx.fillRect(6 * S, 12 * S, 4 * S, 5 * S);
+    fpFlame.refresh();
 
     // Workbench (2 wide, 1 tall)
     const wb = this.textures.createCanvas('furn_workbench', T * 2, T)!;

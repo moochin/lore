@@ -255,10 +255,15 @@ export class BuildingScene extends Phaser.Scene {
 
       // Flickering light effect for candles and fireplaces
       if (piece.key === 'furn_candle' || piece.key === 'furn_fireplace') {
-        // Pulsing alpha on the furniture sprite
+        // Flame overlay — only the fire/flame pixels, placed on top
+        const flameKey = `${piece.key}_flame`;
+        const flame = this.add.image(px, py, flameKey);
+        flame.setDepth(img.depth + 1);
+
+        // Pulsing alpha on flame overlay only
         this.tweens.add({
-          targets: img,
-          alpha: { from: 1, to: 0.6 },
+          targets: flame,
+          alpha: { from: 1, to: 0.4 },
           duration: 300 + Math.random() * 200,
           yoyo: true,
           repeat: -1,
