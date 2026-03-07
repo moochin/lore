@@ -283,10 +283,14 @@ export class OverworldScene extends Phaser.Scene {
     const halfH = 18 * TILE_SIZE;
 
     const zone = new Phaser.Geom.Rectangle(-halfW, -halfH, halfW * 2, halfH * 2);
+    const emitZone = {
+      type: 'random' as const,
+      source: zone as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource,
+    };
 
     const configs: Record<BiomeType, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
       forest: {
-        emitZone: { type: 'random', source: zone },
+        emitZone,
         lifespan: 4000,
         speedX: { min: -10, max: 10 },
         speedY: { min: 15, max: 35 },
@@ -298,7 +302,7 @@ export class OverworldScene extends Phaser.Scene {
         maxParticles: 0,
       },
       rocky: {
-        emitZone: { type: 'random', source: zone },
+        emitZone,
         lifespan: 5000,
         speedX: { min: -5, max: 5 },
         speedY: { min: 10, max: 25 },
@@ -310,7 +314,7 @@ export class OverworldScene extends Phaser.Scene {
         maxParticles: 0,
       },
       swamp: {
-        emitZone: { type: 'random', source: zone },
+        emitZone,
         lifespan: 3500,
         speedX: { min: -8, max: 8 },
         speedY: { min: -8, max: 8 },
@@ -322,7 +326,7 @@ export class OverworldScene extends Phaser.Scene {
         maxParticles: 0,
       },
       desert: {
-        emitZone: { type: 'random', source: zone },
+        emitZone,
         lifespan: 3000,
         speedX: { min: 20, max: 45 },
         speedY: { min: -5, max: 5 },
@@ -334,7 +338,7 @@ export class OverworldScene extends Phaser.Scene {
         maxParticles: 0,
       },
       meadow: {
-        emitZone: { type: 'random', source: zone },
+        emitZone,
         lifespan: 5000,
         speedX: { min: -6, max: 6 },
         speedY: { min: -20, max: -8 },
@@ -346,7 +350,7 @@ export class OverworldScene extends Phaser.Scene {
         maxParticles: 0,
       },
       plains: {
-        emitZone: { type: 'random', source: zone },
+        emitZone,
         lifespan: 4000,
         speedX: { min: -6, max: 6 },
         speedY: { min: -3, max: 3 },
