@@ -244,7 +244,10 @@ export class OverworldScene extends Phaser.Scene {
     const py = npcState.position.y * TILE_SIZE + TILE_SIZE / 2;
     const textureKey = `npc_${npcState.spriteIndex % 6}`;
 
-    const npc = new NPC(this, px, py, textureKey, npcState.entityRef, npcState.name);
+    // Determine entity kind for emote selection
+    const entityKind = this.inferEntityKind(npcState.entityRef);
+
+    const npc = new NPC(this, px, py, textureKey, npcState.entityRef, npcState.name, true, entityKind);
     this.npcs.push(npc);
 
     this.physics.add.collider(this.player.sprite, npc.sprite);
@@ -256,6 +259,20 @@ export class OverworldScene extends Phaser.Scene {
     });
 
     return npc;
+  }
+
+  private inferEntityKind(entityRef: string): string {
+    const entity = getEntityByRef(entityRef);
+    if (!entity) return 'default';
+    const ownedRef = entity.relations?.find((r) => r.type === 'ownerOf')?.targetRef;
+    if (!ownedRef) return 'default';
+    if (ownedRef.startsWith('api:')) return 'api';
+    const owned = getEntityByRef(ownedRef);
+    if (!owned) return 'service';
+    const specType = (owned.spec.type as string) ?? 'service';
+    if (specType === 'website') return 'website';
+    if (specType === 'library') return 'library';
+    return 'service';
   }
 
   update(_time: number) {
@@ -309,8 +326,14 @@ export class OverworldScene extends Phaser.Scene {
     // Normal movement
     this.player.update();
 
-    // Update NPCs
+    // Update NPCs — set proximity flag and update behavior
+    const playerX = this.player.sprite.x;
+    const playerY = this.player.sprite.y;
+    const proximityDist = TILE_SIZE * 3;
     for (const npc of this.npcs) {
+      const dx = npc.sprite.x - playerX;
+      const dy = npc.sprite.y - playerY;
+      npc.playerNearby = Math.sqrt(dx * dx + dy * dy) < proximityDist;
       npc.update(_time);
     }
 
