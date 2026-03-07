@@ -282,10 +282,16 @@ export class OverworldScene extends Phaser.Scene {
     const halfW = 22 * TILE_SIZE;
     const halfH = 18 * TILE_SIZE;
 
-    const zone = new Phaser.Geom.Rectangle(-halfW, -halfH, halfW * 2, halfH * 2);
+    // Common emitZone covering village area
     const emitZone = {
       type: 'random' as const,
-      source: zone as unknown as Phaser.Types.GameObjects.Particles.RandomZoneSource,
+      source: {
+        getRandomPoint: (point: Phaser.Types.Math.Vector2Like) => {
+          point.x = (Math.random() - 0.5) * halfW * 2;
+          point.y = (Math.random() - 0.5) * halfH * 2;
+          return point;
+        },
+      },
     };
 
     const configs: Record<BiomeType, Phaser.Types.GameObjects.Particles.ParticleEmitterConfig> = {
@@ -299,7 +305,6 @@ export class OverworldScene extends Phaser.Scene {
         frequency: 300,
         alpha: { start: 0.9, end: 0 },
         scale: { start: 3, end: 1.5 },
-        maxParticles: 0,
       },
       rocky: {
         emitZone,
@@ -311,7 +316,6 @@ export class OverworldScene extends Phaser.Scene {
         frequency: 350,
         alpha: { start: 0.9, end: 0 },
         scale: { start: 2.5, end: 1 },
-        maxParticles: 0,
       },
       swamp: {
         emitZone,
@@ -323,7 +327,6 @@ export class OverworldScene extends Phaser.Scene {
         frequency: 400,
         alpha: { start: 0.5, end: 1 },
         scale: { start: 2, end: 3 },
-        maxParticles: 0,
       },
       desert: {
         emitZone,
@@ -335,7 +338,6 @@ export class OverworldScene extends Phaser.Scene {
         frequency: 250,
         alpha: { start: 0.8, end: 0 },
         scale: { start: 3, end: 1 },
-        maxParticles: 0,
       },
       meadow: {
         emitZone,
@@ -347,7 +349,6 @@ export class OverworldScene extends Phaser.Scene {
         frequency: 350,
         alpha: { start: 0.8, end: 0 },
         scale: { start: 2.5, end: 1 },
-        maxParticles: 0,
       },
       plains: {
         emitZone,
@@ -359,7 +360,6 @@ export class OverworldScene extends Phaser.Scene {
         frequency: 500,
         alpha: { start: 0.6, end: 0 },
         scale: { start: 2, end: 1 },
-        maxParticles: 0,
       },
     };
 
@@ -374,6 +374,7 @@ export class OverworldScene extends Phaser.Scene {
 
     const emitter = this.add.particles(cx, cy, textureMap[biome], configs[biome]);
     emitter.setDepth(9000);
+    emitter.start();
     return emitter;
   }
 
